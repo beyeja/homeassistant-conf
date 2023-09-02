@@ -62,6 +62,7 @@ api:
   encryption:
 
 ota:
+  password: !secret ota_password # "3e84825c18bd644fc631f2bd982f043f"
 
 wifi:
   ssid: !secret wifi_ssid
@@ -70,7 +71,7 @@ wifi:
   # Enable fallback hotspot (captive portal) in case wifi connection fails
   ap:
     ssid: "Cam-Esp-32 Fallback Hotspot"
-    password: "vagF5xKrf7MP"
+    password: !secret wifi_ap_password
 
 captive_portal:
     

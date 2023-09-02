@@ -1,1 +1,13 @@
-secrets
+secrets.**
+ssh/
+.storage/
+blueprints/
+deCONZ/
+custom_components/
+image/
+tts/
+www/
+.HA_VERSION
+**.log
+**.log.**
+**.db**
