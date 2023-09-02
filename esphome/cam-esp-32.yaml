@@ -1,0 +1,76 @@
+esphome:
+  name: cam-esp-32
+  friendly_name: cam-esp-32
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+esp32_camera:
+  name: Camera ESP32
+  external_clock:
+    pin: GPIO0
+    frequency: 20MHz
+  i2c_pins:
+    sda: GPIO26
+    scl: GPIO27
+  data_pins: [GPIO5, GPIO18, GPIO19, GPIO21, GPIO36, GPIO39, GPIO34, GPIO35]
+  vsync_pin: GPIO25
+  href_pin: GPIO23
+  pixel_clock_pin: GPIO22
+  power_down_pin: GPIO32
+    
+  # pic settings
+  # cam module is OV2640
+  vertical_flip: True
+  resolution: SXGA # CIF | SVGA |  SXGA | UXGA
+  jpeg_quality: 25
+  max_framerate: 15fps
+  contrast: -2
+  
+
+esp32_camera_web_server:
+  - port: 8080
+    mode: stream
+
+output:
+  - platform: gpio
+    pin: GPIO4
+    id: gpio_4
+
+light:
+  - platform: binary
+    name: Camera ESP32 Light
+    output: gpio_4
+
+binary_sensor:
+  - platform: status
+    name: Camera ESP32 Status
+
+sensor:
+  - platform: wifi_signal
+    name: Camera ESP32 Wifi Signal
+    update_interval: 60s
+  
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  encryption:
+
+ota:
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Cam-Esp-32 Fallback Hotspot"
+    password: "vagF5xKrf7MP"
+
+captive_portal:
+    

@@ -1,0 +1,11 @@
+template:
+  # sensors for esp home passing of data (access to object attr. is not possible so we have to extract the data into a dedicated sensor)
+  - sensor:
+      - name: "ESPHome: Next Sunset as String"
+        state: '{{ as_timestamp(states.sun.sun.attributes.next_setting) | timestamp_custom("%H:%M") }}'
+      - name: "ESPHome: Next Sunrise as String"
+        state: '{{ as_timestamp(states.sun.sun.attributes.next_rising) | timestamp_custom("%H:%M") }}'
+      - name: "ESPHome: Forecast Today condition"
+        state: '{{ state_attr("weather.jan_home", "forecast")[0].condition }}'
+      - name: "ESPHome: Forecast Today temperature"
+        state: '{{ state_attr("weather.jan_home", "forecast")[0].temperature  | round(0) }}'

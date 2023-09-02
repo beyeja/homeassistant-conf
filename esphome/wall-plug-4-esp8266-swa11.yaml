@@ -1,0 +1,71 @@
+esphome:
+  name: wall-plug-4-esp8266-swa11
+  friendly_name: Wall Plug 4 ESP8266 SWA11
+
+esp8266:
+  board: esp01_1m
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  encryption:
+
+ota:
+  password: !secret ota_password
+
+sensor:
+  - platform: wifi_signal
+    name: "Wifi Signal"
+    update_interval: 60s
+    icon: mdi:wifi
+
+  - platform: uptime
+    name: "Uptime"
+    update_interval: 60s
+    icon: mdi:clock-outline
+
+status_led:
+  pin:
+    number: GPIO04
+  id: led_blue
+    
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: GPIO13
+      mode: INPUT_PULLUP
+      inverted: True
+    name: "Button"
+    id: wp_button
+    filters:
+      delayed_on_off: 100ms # Debouncing
+    on_press:
+      - switch.toggle: wp_relay
+
+switch:
+  # relay itself
+  - platform: gpio
+    name: "Relay"
+    id: wp_relay
+    pin: GPIO05
+    restore_mode: RESTORE_DEFAULT_OFF
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Wall-Plug-4-Esp8266-Swa11"
+    password: !secret wifi_ap_password
+    
+  # manual ip as this esp device has issues with asus smart-connect feature
+  # manual_ip: 
+  #   static_ip: 192.168.2.194
+  #   gateway: 192.168.2.1
+  #   subnet: 255.255.255.0
+
+captive_portal:
+    

@@ -1,0 +1,74 @@
+esphome:
+  name: ambient-sensor-8266
+
+
+esp8266:
+  board: nodemcuv2
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  encryption:
+
+ota:
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Ambient-Sensor-8266"
+    password: "g4zsEvswdKif"
+
+i2c:
+  scan: true
+  id: bus_a
+
+# Example configuration entry
+switch:
+  - platform: gpio
+    pin: 
+      number: D0
+    name: "Ambient Sensor LED"
+    id: "ambient_sensor_8266_led"
+
+sensor:
+  - platform: wifi_signal
+    name: "Ambient Sensor WiFi Signal"
+    id: "ambient_sensor_8266_wifi_signal"
+    update_interval: 60s
+  - platform: tcs34725
+    i2c_id: bus_a
+    # red_channel:
+    #   name: "Ambient Sensor Red Channel"
+    # green_channel:
+    #   name: "Ambient Sensor Green Channel"
+    # blue_channel:
+    #   name: "Ambient Sensor Blue Channel"
+    # clear_channel:
+    #   name: "Ambient Sensor Clear Channel"
+    illuminance:
+      name: "Ambient Sensor Illuminance"
+      # id: "ambient_sensor_8266_illuminance"
+      accuracy_decimals: 0
+      filters:
+        - or:
+            - delta: 250
+            - throttle: 20sec
+    color_temperature:
+      name: "Ambient Sensor Color Temperature"
+      # id: "ambient_sensor_8266_color_temp"
+      accuracy_decimals: 0
+      filters:
+        - or:
+            - delta: 50 
+            - throttle: 20sec
+    glass_attenuation_factor: 2
+    address: 0x29
+    update_interval: 2s
+
+captive_portal:
+    

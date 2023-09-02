@@ -1,0 +1,251 @@
+esphome:
+  name: esp-32-7-e-ink
+  friendly_name: E-Ink Display esp-32-7-e-ink
+  includes: "eInkRender.h"
+
+esp32:
+  board: nodemcu-32s
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  encryption:
+
+ota:
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Esp-32-7-E-Ink Fallback Hotspot"
+    password: "MIwH4d5OfL1Z"
+    
+spi:
+  clk_pin: GPIO18
+  mosi_pin: GPIO23
+
+sensor:
+  - platform: wifi_signal
+    name: "WiFi Signal"
+    update_interval: 60s
+    icon: mdi:wifi
+
+  - platform: uptime
+    name: "Uptime"
+    update_interval: 60s
+    icon: mdi:clock-outline
+
+  # internal sensors
+  - platform: homeassistant
+    id: eWattage
+    entity_id: sensor.aq_sm_plg_1_power
+    internal: true
+    attribute: voltage
+
+binary_sensor:
+  - platform: homeassistant
+    id: thermostatBoolean
+    entity_id: switch.aquara_smart_plug_1
+    internal: true
+
+
+text_sensor:
+  # weather infos
+  - platform: homeassistant
+    id: tempToday
+    entity_id: sensor.esphome_forecast_today_temperature
+    internal: true
+  - platform: homeassistant
+    id: weatherConditionToday
+    entity_id: sensor.esphome_forecast_today_condition
+    internal: true
+
+  # sunset and sunrise
+  - platform: homeassistant
+    id: nextSunSetString
+    entity_id: sensor.esphome_next_sunset_as_string
+    internal: true
+  - platform: homeassistant
+    id: nextSunRiseString
+    entity_id: sensor.esphome_next_sunrise_as_string
+    internal: true
+
+font:
+  # gfonts://family[@weight]
+  # - file: "fonts/pixel_operator_16px/PixelOperator-Bold.ttf"
+  #   id: fontS
+  #   size: 18
+  # - file: "gfonts://Roboto"
+  #   id: fontL
+  #   size: 20  
+  - file: "fonts/VCR_OSD_MONO_1.001_21px.ttf"
+    id: bitFont
+    size: 21
+  - file: "fonts/roundedsquare_22.ttf"
+    id: fontXL
+    size: 22  
+  - file: "gfonts://Roboto"
+    id: fontXXL
+    size: 30
+        
+image:
+  - file: mdi:solar-panel-large
+    id: icnSolarPanelXL
+    resize: 30x30
+  - file: mdi:water-thermometer-outline
+    id: icnThermostatXL
+    resize: 30x30
+  - file: mdi:weather-sunset-down
+    id: icnSunSet
+    resize: 25x25
+  - file: mdi:weather-sunset-up
+    id: icnSunRise
+    resize: 25x25
+
+  # forecast images
+  - file: mdi:weather-sunny
+    id: icnSunny
+    resize: 60x60
+  - file: mdi:weather-night
+    id: icnClearNight
+    resize: 60x60
+  - file: mdi:weather-cloudy
+    id: icnCloudy
+    resize: 60x60
+  - file: mdi:weather-rainy
+    id: icnRainy
+    resize: 60x60
+  - file: mdi:weather-snowy-rainy
+    id: icnSleet
+    resize: 60x60
+  - file: mdi:weather-snowy
+    id: icnSnow
+    resize: 60x60
+  - file: mdi:weather-windy
+    id: icnWind
+    resize: 60x60
+  - file: mdi:weather-fog
+    id: icnFog
+    resize: 60x60
+  - file: mdi:weather-partly-cloudy
+    id: icnPartlyCloudy
+    resize: 60x60
+
+display:
+  - platform: waveshare_epaper
+    id: display_component
+    model: 2.90inv2
+    cs_pin: GPIO5
+    dc_pin: GPIO1
+    busy_pin: GPIO4
+    reset_pin: GPIO3
+    full_update_every: 1
+    update_interval: 60s # this is only initial value -> gets set to longer after first values loaded
+    # reset_duration: 2ms
+    rotation: 90
+    auto_clear_enabled: true
+    lambda: |-
+      //display is 296x128
+      int w = it.get_width();
+      int h = it.get_height();
+      
+      int plumLineX = 197; // pos of vertical plum line graphic
+      int layoutAlignAX = 40; // padding layout box A
+      int layoutAlignBX = 210; // padding layout box B
+      
+      // main value            
+      it.image(0, 3, id(icnSolarPanelXL));
+      it.printf(layoutAlignAX, 1, id(fontXXL), "%.0f W", id(eWattage).state);
+      
+      if (id(eWattage).has_state() && id(eWattage).state > 0 ) {
+        // percentage
+        float maxWattage = 600; // max expected wattage
+        float percentage = id(eWattage).state / (maxWattage / 100);
+        it.printf(layoutAlignAX, 50, id(bitFont), "%.0f %%", percentage <= 100 ? percentage : 100);
+      
+        // progress bar x, y, w, h
+        int progressW = plumLineX - layoutAlignAX * 2;
+        it.rectangle(layoutAlignAX, 80, progressW, 7);
+        it.filled_rectangle(layoutAlignAX, 80, progressW * (percentage / 100), 7);
+      } else {
+        it.printf(layoutAlignAX, 50, id(bitFont), "%.0f %%", "--");
+      }
+            
+      // sunrise
+      it.image(0, 105, id(icnSunRise));
+      if (id(nextSunRiseString).has_state()) {
+          it.printf(28, 107, id(bitFont), "%s", id(nextSunRiseString).state.c_str());
+      } else {
+          it.print(28, 107, id(bitFont), "load..."); 
+      }
+
+      // sunset
+      it.image(102, 105, id(icnSunSet));
+      if (id(nextSunSetString).has_state()) {
+          it.printf(130, 107, id(bitFont), "%s", id(nextSunSetString).state.c_str());
+      } else {
+          it.print(130, 107, id(bitFont), "load..."); 
+      }
+      
+      // plumLine | vert line divider ##################################### 
+      it.line(plumLineX, 10, 197, w - 10);
+
+      int layoutBoxBCenterX = (w - plumLineX + 1) / 2 + plumLineX + 1;
+
+      // temps and date
+      it.printf(layoutBoxBCenterX, 70, id(bitFont), TextAlign::CENTER,
+                "%s °C", id(tempToday).state.c_str()); 
+
+      int fcIconX = layoutBoxBCenterX; // center of layout box B
+      int fcIconY = 30;
+      // map forecast to icon
+      if (id(weatherConditionToday).state == "sunny") {
+          it.image(fcIconX, fcIconY, id(icnSunny), ImageAlign::CENTER);
+      } else if (id(weatherConditionToday).state == "clear-day") {
+          it.image(fcIconX, fcIconY, id(icnSunny), ImageAlign::CENTER);
+      } else if (id(weatherConditionToday).state == "clear-night") {
+          it.image(fcIconX, fcIconY, id(icnClearNight), ImageAlign::CENTER);
+      } else if (id(weatherConditionToday).state == "cloudy") {
+          it.image(fcIconX, fcIconY, id(icnCloudy), ImageAlign::CENTER);
+      } else if (id(weatherConditionToday).state == "rainy") {
+          it.image(fcIconX, fcIconY, id(icnRainy), ImageAlign::CENTER);
+      } else if (id(weatherConditionToday).state == "sleet") {
+          it.image(fcIconX, fcIconY, id(icnSleet), ImageAlign::CENTER);
+      } else if (id(weatherConditionToday).state == "snow") {
+          it.image(fcIconX, fcIconY, id(icnSnow), ImageAlign::CENTER);
+      } else if (id(weatherConditionToday).state == "wind") {
+          it.image(fcIconX, fcIconY, id(icnWind), ImageAlign::CENTER);
+      } else if (id(weatherConditionToday).state == "fog") {
+          it.image(fcIconX, fcIconY, id(icnFog), ImageAlign::CENTER);
+      } else if (id(weatherConditionToday).state == "partlycloudy") {
+          it.image(fcIconX, fcIconY, id(icnPartlyCloudy), ImageAlign::CENTER);
+      } else {
+          it.printf(fcIconX, fcIconY, id(bitFont),  "%s", id(weatherConditionToday).state.c_str()); 
+      }
+
+      // thermostat state
+      it.image(layoutAlignBX + 3, h - 26, id(icnThermostatXL));
+      if (id(thermostatBoolean).state == true || id(thermostatBoolean).state == false) {
+        it.print(layoutAlignBX + 42, h - 27, id(fontXL), id(thermostatBoolean).state == true ? "ON" : "OFF");
+      }
+      
+# # interval action to set the update interval to a long value once the values are fetched
+# interval:
+#   interval: 
+#     60min
+#   then: 
+#     lambda: |-
+#       if( id(weatherConditionToday).state.length() > 0 ) {
+
+#         // set update inteval to 10min
+#         id(display_component).set_update_interval(600);
+#         id(display_component).call_setup();
+
+#       }
+      
+captive_portal:
+    
