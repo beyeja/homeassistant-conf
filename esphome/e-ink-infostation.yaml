@@ -1,0 +1,243 @@
+esphome:
+  name: e-ink-infostation
+  friendly_name: E-Ink Infostation
+
+esp32:
+  board: nodemcu-32s
+
+# Enable logging
+logger:
+  level: VERBOSE
+
+# Enable Home Assistant API
+api:
+  encryption:
+
+ota:
+  password: !secret ota_password
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "E-Ink-Infostation"
+    password: !secret wifi_ap_password
+    
+spi:
+  clk_pin: GPIO18
+  mosi_pin: GPIO23
+
+output:
+  - platform: gpio
+    pin: GPIO14
+    inverted: True
+    id: PWR_PIN
+    
+
+sensor:
+  - platform: wifi_signal
+    name: "WiFi Signal"
+    update_interval: 60s
+    icon: mdi:wifi
+
+  - platform: uptime
+    name: "Uptime"
+    update_interval: 60s
+    icon: mdi:clock-outline
+
+  # internal sensors
+  - platform: homeassistant
+    id: eWattage
+    entity_id: sensor.aq_sm_plg_1_power
+    internal: true
+    attribute: voltage
+
+binary_sensor:
+  - platform: homeassistant
+    id: thermostatBoolean
+    entity_id: switch.aquara_smart_plug_1
+    internal: true
+
+
+text_sensor:
+  # weather infos
+  - platform: homeassistant
+    id: tempToday
+    entity_id: sensor.esphome_forecast_today_temperature
+    internal: true
+  - platform: homeassistant
+    id: weatherConditionToday
+    entity_id: sensor.esphome_forecast_today_condition
+    internal: true
+
+  # sunset and sunrise
+  - platform: homeassistant
+    id: nextSunSetString
+    entity_id: sensor.esphome_next_sunset_as_string
+    internal: true
+  - platform: homeassistant
+    id: nextSunRiseString
+    entity_id: sensor.esphome_next_sunrise_as_string
+    internal: true
+
+font:
+  # gfonts://family[@weight]
+  # - file: "fonts/pixel_operator_16px/PixelOperator-Bold.ttf"
+  #   id: fontS
+  #   size: 18
+  # - file: "gfonts://Roboto"
+  #   id: fontL
+  #   size: 20  
+  # - file: "fonts/VCR_OSD_MONO_1.001_21px.ttf"
+  #   id: bitFont
+  #   size: 21
+  - file: "gfonts://Roboto"
+    id: fontXL
+    size: 33  
+  - file: "gfonts://Roboto"
+    id: fontXXL
+    size: 60
+        
+image:
+  - file: dashboard-capture.png
+    id: dashboardCapture
+    type: RGB565
+    
+
+  - file: mdi:solar-panel-large
+    id: icnSolarPanelXL
+    resize: 30x30
+  - file: mdi:water-thermometer-outline
+    id: icnThermostatXL
+    resize: 30x30
+  - file: mdi:weather-sunset-down
+    id: icnSunSet
+    resize: 25x25
+  - file: mdi:weather-sunset-up
+    id: icnSunRise
+    resize: 25x25
+
+  # forecast images
+  - file: mdi:weather-sunny
+    id: icnSunny
+    resize: 120x120
+  - file: mdi:weather-night
+    id: icnClearNight
+    resize: 120x120
+  - file: mdi:weather-cloudy
+    id: icnCloudy
+    resize: 120x120
+  - file: mdi:weather-rainy
+    id: icnRainy
+    resize: 120x120
+  - file: mdi:weather-snowy-rainy
+    id: icnSleet
+    resize: 120x120
+  - file: mdi:weather-snowy
+    id: icnSnow
+    resize: 120x120
+  - file: mdi:weather-windy
+    id: icnWind
+    resize: 120x120
+  - file: mdi:weather-fog
+    id: icnFog
+    resize: 120x120
+  - file: mdi:weather-partly-cloudy
+    id: icnPartlyCloudy
+    resize: 120x120
+
+display:
+  - platform: waveshare_epaper
+    id: display_component
+    model: 7.50in-bv3
+    cs_pin: GPIO5
+    dc_pin: GPIO1
+    busy_pin: GPIO4
+    reset_pin: GPIO3
+    # full_update_every: 1
+    update_interval: 600s # this is only initial value -> gets set to longer after first values loaded
+    reset_duration: 2ms
+    # full_update_every: 1
+    rotation: 90
+    # auto_clear_enabled: true
+    lambda: |-
+      //display is 800x480
+      int w = it.get_width();
+      int h = it.get_height();
+
+      it.image(100, 0, id(dashboardCapture));
+
+      int xSR = 0;
+      int ySR = 105;
+      
+      int xSS = 102;
+      int ySS = 105;
+      
+      int xWeather = 350;
+      int yWeather = 30;
+
+      // sunrise
+      it.image(xSR, ySR, id(icnSunRise));
+      if (id(nextSunRiseString).has_state()) {
+          it.printf(xSR + 28, ySR + 2, id(fontXL), "%s", id(nextSunRiseString).state.c_str());
+      } else {
+          it.print(xSR + 28, ySR + 2, id(fontXL), "load..."); 
+      }
+
+      // sunset
+      it.image(xSS, ySS, id(icnSunSet));
+      if (id(nextSunSetString).has_state()) {
+          it.printf(xSS + 28, ySS + 2, id(fontXL), "%s", id(nextSunSetString).state.c_str());
+      } else {
+          it.print(xSS + 28, ySS + 2, id(fontXL), "load..."); 
+      }
+      
+      // temps and date
+      it.printf(xWeather, yWeather + 80, id(fontXXL), TextAlign::CENTER,
+                "%s °C", id(tempToday).state.c_str()); 
+
+      int fcIconX = xWeather; // center of layout box B
+      int fcIconY = yWeather;
+      // map forecast to icon
+      if (id(weatherConditionToday).state == "sunny") {
+          it.image(fcIconX, fcIconY, id(icnSunny), ImageAlign::CENTER);
+      } else if (id(weatherConditionToday).state == "clear-day") {
+          it.image(fcIconX, fcIconY, id(icnSunny), ImageAlign::CENTER);
+      } else if (id(weatherConditionToday).state == "clear-night") {
+          it.image(fcIconX, fcIconY, id(icnClearNight), ImageAlign::CENTER);
+      } else if (id(weatherConditionToday).state == "cloudy") {
+          it.image(fcIconX, fcIconY, id(icnCloudy), ImageAlign::CENTER);
+      } else if (id(weatherConditionToday).state == "rainy") {
+          it.image(fcIconX, fcIconY, id(icnRainy), ImageAlign::CENTER);
+      } else if (id(weatherConditionToday).state == "sleet") {
+          it.image(fcIconX, fcIconY, id(icnSleet), ImageAlign::CENTER);
+      } else if (id(weatherConditionToday).state == "snow") {
+          it.image(fcIconX, fcIconY, id(icnSnow), ImageAlign::CENTER);
+      } else if (id(weatherConditionToday).state == "wind") {
+          it.image(fcIconX, fcIconY, id(icnWind), ImageAlign::CENTER);
+      } else if (id(weatherConditionToday).state == "fog") {
+          it.image(fcIconX, fcIconY, id(icnFog), ImageAlign::CENTER);
+      } else if (id(weatherConditionToday).state == "partlycloudy") {
+          it.image(fcIconX, fcIconY, id(icnPartlyCloudy), ImageAlign::CENTER);
+      } else {
+          it.printf(fcIconX, fcIconY, id(fontXL),  "%s", id(weatherConditionToday).state.c_str()); 
+      }
+      
+# # interval action to set the update interval to a long value once the values are fetched
+# interval:
+#   interval: 
+#     60min
+#   then: 
+#     lambda: |-
+#       if( id(weatherConditionToday).state.length() > 0 ) {
+
+#         // set update inteval to 10min
+#         id(display_component).set_update_interval(600);
+#         id(display_component).call_setup();
+
+#       }
+      
+captive_portal:
+    
