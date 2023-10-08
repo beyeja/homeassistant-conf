@@ -1,6 +1,27 @@
 esphome:
   name: e-ink-infostation
   friendly_name: E-Ink Infostation
+  includes:
+    - functions/helpers.h
+  on_boot: 
+    then:
+      - logger.log: "On Boot Event triggered"
+
+# external_components:
+#   # replace 1234 with the number of the Pull Request
+#   - source: github://pr#4710
+#     components:
+#       # list all components modified by this Pull Request here
+#       - online_image
+
+# online_image:
+#   - url: "https://upload.wikimedia.org/wikipedia/commons/3/33/Neighborhood_watch_bw.png"
+#     id: dashboardCapture
+#     on_error:
+#       - logger.log: "Could not download the image"
+#     type: BINARY
+#     on_download_finished:
+#       - component.update: displayComponent
 
 esp32:
   board: nodemcu-32s
@@ -25,16 +46,28 @@ wifi:
     ssid: "E-Ink-Infostation"
     password: !secret wifi_ap_password
     
-spi:
-  clk_pin: GPIO18
-  mosi_pin: GPIO23
-
 output:
   - platform: gpio
     pin: GPIO14
     inverted: True
-    id: PWR_PIN
-    
+    id: displayPrwPin
+
+# deep_sleep: 
+#   # run_duration: 120s
+#   sleep_duration: 15min
+#   id: deepSleepComponent
+
+i2c:
+  scan: False
+  id: bus_a  
+  # - sda: GPIO21
+  # - scl: GPIO22
+
+spi:
+  - id: spiBus0
+    clk_pin: GPIO18 # SCK # when to read data
+    mosi_pin: GPIO23 # aka SDO (serial data out - send data)
+    # miso_pin: # aka SDI (serial data in - receive data)  
 
 sensor:
   - platform: wifi_signal
@@ -49,27 +82,119 @@ sensor:
 
   # internal sensors
   - platform: homeassistant
-    id: eWattage
-    entity_id: sensor.aq_sm_plg_1_power
+    id: plant0060
+    entity_id: sensor.plant_sensor_0060_moisture
     internal: true
-    attribute: voltage
-
-binary_sensor:
   - platform: homeassistant
-    id: thermostatBoolean
-    entity_id: switch.aquara_smart_plug_1
+    id: plant0815
+    entity_id: sensor.plant_sensor_0815_moisture
+    internal: true
+  - platform: homeassistant
+    id: plant6c13
+    entity_id: sensor.plant_sensor_6c13_moisture
+    internal: true
+  - platform: homeassistant
+    id: plant6c26
+    entity_id: sensor.plant_sensor_6c26_moisture
+    internal: true
+  - platform: homeassistant
+    id: plant6c37
+    entity_id: sensor.plant_sensor_6c37_moisture
     internal: true
 
+  - platform: bme280
+    i2c_id: bus_a  
+    address: 0x76
+    temperature:
+      name: "BME280 Temperature"
+      id: internalTemp
+      accuracy_decimals: 1
+      oversampling: 16x
+    pressure:
+      name: "BME280 Pressure"
+      accuracy_decimals: 1
+    humidity:
+      name: "BME280 Humidity"
+      id: internalHumidity
+      accuracy_decimals: 1
+    update_interval: 5s  
 
 text_sensor:
   # weather infos
   - platform: homeassistant
-    id: tempToday
-    entity_id: sensor.esphome_forecast_today_temperature
+    id: temp
+    entity_id: sensor.esphome_weather_forecast
+    attribute: temperature
+    internal: true
+    on_value: 
+      then:
+        - lambda: |-
+            ESP_LOGD("main", "On Value triggered for temp sensor: %s", x.c_str());
+        - component.update: displayComponent
+        - lambda: |-
+            ESP_LOGD("main", "Going to sleep in 5 seconds...");
+        - delay: 5s
+        # - deep_sleep.enter: 
+        #     id: deepSleepComponent
+
+  - platform: homeassistant
+    id: weatherCondition
+    entity_id: sensor.esphome_weather_forecast
+    attribute: condition
     internal: true
   - platform: homeassistant
-    id: weatherConditionToday
-    entity_id: sensor.esphome_forecast_today_condition
+    id: rainProbab
+    entity_id: sensor.esphome_weather_forecast
+    attribute: precipitation_probability
+    internal: true
+    
+  - platform: homeassistant
+    id: tempDay1
+    entity_id: sensor.esphome_weather_forecast
+    attribute: day_1_temperature
+    internal: true
+  - platform: homeassistant
+    id: weatherConditionDay1
+    entity_id: sensor.esphome_weather_forecast
+    attribute: day_1_condition
+    internal: true
+  - platform: homeassistant
+    id: rainProbabDay1
+    entity_id: sensor.esphome_weather_forecast
+    attribute: day_1_precipitation_probability
+    internal: true
+  
+  - platform: homeassistant
+    id: tempDay2
+    entity_id: sensor.esphome_weather_forecast
+    attribute: day_2_temperature
+    internal: true
+  - platform: homeassistant
+    id: weatherConditionDay2
+    entity_id: sensor.esphome_weather_forecast
+    attribute: day_2_condition
+    internal: true
+  - platform: homeassistant
+    id: rainProbabDay2
+    entity_id: sensor.esphome_weather_forecast
+    attribute: day_2_precipitation_probability
+    internal: true
+
+  - platform: homeassistant
+    id: tempLivingroom
+    entity_id: sensor.plant_sensor_0060_temperature
+    internal: true
+  - platform: homeassistant
+    id: tempBedroom
+    entity_id: sensor.plant_sensor_6c13_temperature
+    internal: true
+  - platform: homeassistant
+    id: tempBathroom
+    entity_id: sensor.plant_sensor_6c26_temperature
+    internal: true
+  - platform: homeassistant
+    id: tempBalcony
+    entity_id: sensor.plant_sensor_0815_temperature
     internal: true
 
   # sunset and sunrise
@@ -84,160 +209,198 @@ text_sensor:
 
 font:
   # gfonts://family[@weight]
-  # - file: "fonts/pixel_operator_16px/PixelOperator-Bold.ttf"
-  #   id: fontS
-  #   size: 18
-  # - file: "gfonts://Roboto"
-  #   id: fontL
-  #   size: 20  
-  # - file: "fonts/VCR_OSD_MONO_1.001_21px.ttf"
-  #   id: bitFont
-  #   size: 21
-  - file: "gfonts://Roboto"
-    id: fontXL
-    size: 33  
-  - file: "gfonts://Roboto"
-    id: fontXXL
-    size: 60
+  - file: "fonts/VCR_OSD_MONO_1.001_21px.ttf"
+    id: vcrMonoFont
+    size: 21
+  - file: "fonts/roundedsquare_22.ttf"
+    id: roundedFont
+    size: 22
+  - file: "gfonts://Roboto@500"
+    id: robotoFontSmall
+    size: 25
+  - file: "gfonts://Roboto@700"
+    id: robotoFont25
+    size: 27
+  - file: "gfonts://Roboto@700"
+    id: robotoFont33
+    size: 36
         
 image:
-  - file: dashboard-capture.png
-    id: dashboardCapture
-    type: RGB565
-    
-
   - file: mdi:solar-panel-large
     id: icnSolarPanelXL
     resize: 30x30
+    type: BINARY
   - file: mdi:water-thermometer-outline
     id: icnThermostatXL
     resize: 30x30
   - file: mdi:weather-sunset-down
     id: icnSunSet
-    resize: 25x25
+    resize: 30x30
   - file: mdi:weather-sunset-up
     id: icnSunRise
-    resize: 25x25
+    resize: 30x30
+  - file: mdi:weather-pouring
+    id: icnRainProbability
+    resize: 30x30
 
-  # forecast images
+  # forecast images large
   - file: mdi:weather-sunny
-    id: icnSunny
-    resize: 120x120
+    id: icnSunnyXL
+    resize: 225x225
   - file: mdi:weather-night
-    id: icnClearNight
-    resize: 120x120
+    id: icnClearNightXL
+    resize: 225x225
   - file: mdi:weather-cloudy
-    id: icnCloudy
-    resize: 120x120
+    id: icnCloudyXL
+    resize: 225x225
   - file: mdi:weather-rainy
-    id: icnRainy
-    resize: 120x120
+    id: icnRainyXL
+    resize: 225x225
   - file: mdi:weather-snowy-rainy
-    id: icnSleet
-    resize: 120x120
+    id: icnSleetXL
+    resize: 225x225
   - file: mdi:weather-snowy
-    id: icnSnow
-    resize: 120x120
+    id: icnSnowXL
+    resize: 225x225
   - file: mdi:weather-windy
-    id: icnWind
-    resize: 120x120
+    id: icnWindXL
+    resize: 225x225
   - file: mdi:weather-fog
-    id: icnFog
-    resize: 120x120
+    id: icnFogXL
+    resize: 225x225
   - file: mdi:weather-partly-cloudy
-    id: icnPartlyCloudy
-    resize: 120x120
+    id: icnPartlyCloudyXL
+    resize: 225x225
+
+  # forecast images small
+  - file: mdi:weather-sunny
+    id: icnSunnyMD
+    resize: 125x125
+  - file: mdi:weather-night
+    id: icnClearNightMD
+    resize: 125x125
+  - file: mdi:weather-cloudy
+    id: icnCloudyMD
+    resize: 125x125
+  - file: mdi:weather-rainy
+    id: icnRainyMD
+    resize: 125x125
+  - file: mdi:weather-snowy-rainy
+    id: icnSleetMD
+    resize: 125x125
+  - file: mdi:weather-snowy
+    id: icnSnowMD
+    resize: 125x125
+  - file: mdi:weather-windy
+    id: icnWindMD
+    resize: 125x125
+  - file: mdi:weather-fog
+    id: icnFogMD
+    resize: 125x125
+  - file: mdi:weather-partly-cloudy
+    id: icnPartlyCloudyMD
+    resize: 125x125
+
+    # plants
+  - file: mdi:cactus
+    id: icnCactus
+    resize: 30x30
+  - file: mdi:fruit-pineapple
+    id: icnPineapple
+    resize: 30x30
+  - file: mdi:tree-outline
+    id: icnTree
+    resize: 30x30
+  - file: mdi:sprout-outline
+    id: icnSprout
+    resize: 30x30
+  - file: mdi:flower-tulip-outline
+    id: icnFlower
+    resize: 30x30
 
 display:
   - platform: waveshare_epaper
-    id: display_component
+    id: displayComponent
     model: 7.50in-bv3
-    cs_pin: GPIO5
-    dc_pin: GPIO1
     busy_pin: GPIO4
     reset_pin: GPIO3
+    
+    cs_pin: GPIO5 # chip select (SS) # when to listen for data
+    dc_pin: GPIO1 # ?
+    spi_id: spiBus0
+    
+    on_page_change: 
+      then:
+        - lambda: |-
+            ESP_LOGD("main", "Display page change triggered");
+      
     # full_update_every: 1
-    update_interval: 600s # this is only initial value -> gets set to longer after first values loaded
+    update_interval: never # this is only initial value -> gets set to longer after first values loaded
     reset_duration: 2ms
-    # full_update_every: 1
-    rotation: 90
+    rotation: 270
     # auto_clear_enabled: true
     lambda: |-
       //display is 800x480
-      int w = it.get_width();
-      int h = it.get_height();
+      int sX = 0;
+      int sY = 25;
+      int w = it.get_width() - sX;
+      int h = it.get_height() - 25 - sY;
+      int divMargin = 25;
 
-      it.image(100, 0, id(dashboardCapture));
+      // for layout debugging
+      layoutLines(it, sX, sY, w, h);
 
-      int xSR = 0;
-      int ySR = 105;
-      
-      int xSS = 102;
-      int ySS = 105;
-      
-      int xWeather = 350;
-      int yWeather = 30;
+      // weather forecast today
+      forecast(sX + 10, sY, forecastIcon(id(weatherCondition).state, true), 
+              id(icnRainProbability), temp, rainProbab, it, id(robotoFont33));
+      // weather forecast tomorrow
+      forecast(sX + 315, sY, forecastIcon(id(weatherConditionDay1).state, false), 
+              id(icnRainProbability), tempDay1, rainProbabDay1, it, id(robotoFont25));
+      // weather forecast day after tomorrow
+      forecast(sX + 315, sY + 175, forecastIcon(id(weatherConditionDay2).state, false), 
+              id(icnRainProbability), tempDay2, rainProbabDay2, it, id(robotoFont25));
 
       // sunrise
-      it.image(xSR, ySR, id(icnSunRise));
-      if (id(nextSunRiseString).has_state()) {
-          it.printf(xSR + 28, ySR + 2, id(fontXL), "%s", id(nextSunRiseString).state.c_str());
-      } else {
-          it.print(xSR + 28, ySR + 2, id(fontXL), "load..."); 
-      }
-
+      sunSetRise(sX + 10, sY + 325, id(icnSunRise), id(nextSunRiseString), it, id(robotoFontSmall));
       // sunset
-      it.image(xSS, ySS, id(icnSunSet));
-      if (id(nextSunSetString).has_state()) {
-          it.printf(xSS + 28, ySS + 2, id(fontXL), "%s", id(nextSunSetString).state.c_str());
-      } else {
-          it.print(xSS + 28, ySS + 2, id(fontXL), "load..."); 
-      }
+      sunSetRise(sX + 150, sY + 325, id(icnSunSet), id(nextSunSetString), it, id(robotoFontSmall));
       
-      // temps and date
-      it.printf(xWeather, yWeather + 80, id(fontXXL), TextAlign::CENTER,
-                "%s °C", id(tempToday).state.c_str()); 
-
-      int fcIconX = xWeather; // center of layout box B
-      int fcIconY = yWeather;
-      // map forecast to icon
-      if (id(weatherConditionToday).state == "sunny") {
-          it.image(fcIconX, fcIconY, id(icnSunny), ImageAlign::CENTER);
-      } else if (id(weatherConditionToday).state == "clear-day") {
-          it.image(fcIconX, fcIconY, id(icnSunny), ImageAlign::CENTER);
-      } else if (id(weatherConditionToday).state == "clear-night") {
-          it.image(fcIconX, fcIconY, id(icnClearNight), ImageAlign::CENTER);
-      } else if (id(weatherConditionToday).state == "cloudy") {
-          it.image(fcIconX, fcIconY, id(icnCloudy), ImageAlign::CENTER);
-      } else if (id(weatherConditionToday).state == "rainy") {
-          it.image(fcIconX, fcIconY, id(icnRainy), ImageAlign::CENTER);
-      } else if (id(weatherConditionToday).state == "sleet") {
-          it.image(fcIconX, fcIconY, id(icnSleet), ImageAlign::CENTER);
-      } else if (id(weatherConditionToday).state == "snow") {
-          it.image(fcIconX, fcIconY, id(icnSnow), ImageAlign::CENTER);
-      } else if (id(weatherConditionToday).state == "wind") {
-          it.image(fcIconX, fcIconY, id(icnWind), ImageAlign::CENTER);
-      } else if (id(weatherConditionToday).state == "fog") {
-          it.image(fcIconX, fcIconY, id(icnFog), ImageAlign::CENTER);
-      } else if (id(weatherConditionToday).state == "partlycloudy") {
-          it.image(fcIconX, fcIconY, id(icnPartlyCloudy), ImageAlign::CENTER);
-      } else {
-          it.printf(fcIconX, fcIconY, id(fontXL),  "%s", id(weatherConditionToday).state.c_str()); 
-      }
+      int qH = 200;
+      int q1X = sX;
+      int q2X = (q2X + w) / 2;
+      int q1Y = sY + 375;
+      int q2Y = q1Y + qH / 2;
+      // horizontal
+      it.line(q1X + 10, q2Y, sX + w - 10, q2Y);
+      // vertical
+      it.line(q2X, q1Y + 10, q2X, q1Y + qH - 10);
       
-# # interval action to set the update interval to a long value once the values are fetched
-# interval:
-#   interval: 
-#     60min
-#   then: 
-#     lambda: |-
-#       if( id(weatherConditionToday).state.length() > 0 ) {
-
-#         // set update inteval to 10min
-#         id(display_component).set_update_interval(600);
-#         id(display_component).call_setup();
-
-#       }
+      // temps rooms
+      roomInfo(q1X + 10, q1Y + 10, 
+              "Wohnzimmer", id(tempLivingroom), it, id(roundedFont), id(robotoFont25));
+      roomInfo(q2X + 10, q1Y + 10, 
+              "Balkon", id(tempBalcony), it, id(roundedFont), id(robotoFont25));
+      roomInfo(q1X + 10, q2Y + 10, 
+              "Bad", id(tempBathroom), it, id(roundedFont), id(robotoFont25));
+      roomInfo(q2X + 10, q2Y + 10, 
+              "Schlafzimmer", id(tempBedroom), it, id(roundedFont), id(robotoFont25));
+      
+      // plants
+      plant(sX + 240, sY + 590, 
+          id(plant0060).has_state() ? id(plant0060).state : -1, 
+          id(icnCactus), it, id(vcrMonoFont));
+      plant(sX + 290, sY + 590, 
+          id(plant0815).has_state() ? id(plant0815).state : -1, 
+          id(icnSprout), it, id(vcrMonoFont));
+      plant(sX + 340, sY + 590, 
+          id(plant6c13).has_state() ? id(plant6c13).state : -1, 
+          id(icnPineapple), it, id(vcrMonoFont));
+      plant(sX + 390, sY + 590, 
+          id(plant6c26).has_state() ? id(plant6c26).state : -1, 
+          id(icnTree), it, id(vcrMonoFont));
+      plant(sX + 440, sY + 590, 
+          id(plant6c37).has_state() ? id(plant6c37).state : -1, 
+          id(icnFlower), it, id(vcrMonoFont));
       
 captive_portal:
     

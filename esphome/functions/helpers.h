@@ -1,0 +1,130 @@
+using namespace esphome;
+using namespace display;
+
+const bool DEBUG_LAYOUT = false;
+
+void layoutLines(display::Display &it, int sX, int sY, int w, int h) {
+  int gWidth = 50;
+
+  if (!DEBUG_LAYOUT)
+    return;
+
+  // vertical
+  for (int i = sX; i <= w; i += gWidth) {
+    // fromX, fromY, toX, toY
+    it.line(i, sY, i, h + sY);
+  }
+  it.line(w, sY, w, h + sY);
+
+  // horizontal
+  for (int i = sY; i <= h; i += gWidth) {
+    // fromX, fromY, toX, toY
+    it.line(sX, i, w, i);
+  }
+  it.line(sX, h + sY, w, h + sY);
+}
+
+// map forecast to icon
+esphome::image::Image *forecastIcon(std::__cxx11::string forecastVal, bool xl) {
+  if (forecastVal == "sunny" || forecastVal == "clear-day") {
+    return &id(xl ? icnSunnyXL : icnSunnyMD);
+  } else if (forecastVal == "clear-night") {
+    return &id(xl ? icnClearNightXL : icnClearNightMD);
+  } else if (forecastVal == "cloudy") {
+    return &id(xl ? icnCloudyXL : icnCloudyMD);
+  } else if (forecastVal == "rainy") {
+    return &id(xl ? icnRainyXL : icnRainyMD);
+  } else if (forecastVal == "sleet") {
+    return &id(xl ? icnSleetXL : icnSleetMD);
+  } else if (forecastVal == "snow") {
+    return &id(xl ? icnSnowXL : icnSnowMD);
+  } else if (forecastVal == "wind") {
+    return &id(xl ? icnWindXL : icnWindMD);
+  } else if (forecastVal == "fog") {
+    return &id(xl ? icnFogXL : icnFogMD);
+  } else if (forecastVal == "partlycloudy") {
+    return &id(xl ? icnPartlyCloudyXL : icnPartlyCloudyMD);
+  } else {
+    return &id(xl ? icnSunnyXL : icnSunnyMD);
+  }
+}
+
+void plant(int x, int y, float val, esphome::image::Image *icn,
+           display::Display &it, esphome::font::Font *font) {
+  int progressH = 100;
+  int progressW = 25;
+  int margin = 5;
+
+  it.image(x + progressW / 2, y, icn, ImageAlign::TOP_CENTER);
+
+  // progress bar x, y, w, h
+  int barX = x;
+  int barY = y + icn->get_height() + margin;
+  it.rectangle(barX, barY, progressW, progressH);
+  it.rectangle(barX + 1, barY + 1, progressW - 2, progressH - 2);
+  // remove top of bar container
+  it.line(barX + 2, barY, barX + progressW - 2, barY, COLOR_OFF);
+  it.line(barX + 2, barY + 1, barX + progressW - 2, barY + 1, COLOR_OFF);
+
+  int fillHeight = progressH * (val / 100);
+  // fill bar
+  it.filled_rectangle(barX, barY + progressH - fillHeight, progressW,
+                      fillHeight);
+
+  // render tick-marks
+  int tickInterval = 20;
+  int tickLn = 10;
+  for (int i = tickInterval; i < progressH; i += tickInterval) {
+    if (i >= progressH - fillHeight)
+      it.line(barX + 2, barY + i, barX + tickLn, barY + i, COLOR_OFF);
+    else
+      it.line(barX + 2, barY + i, barX + tickLn, barY + i, COLOR_ON);
+  }
+
+  // percentage
+  it.printf(x + progressW / 2, y + icn->get_height() + progressH + margin * 2,
+            font, TextAlign::TOP_CENTER, "%.0f%%", val);
+}
+
+void roomInfo(int x, int y, char *room,
+              esphome::homeassistant::HomeassistantTextSensor *tempSensor,
+              display::Display &it, esphome::font::Font *headerFont,
+              esphome::font::Font *dataFont) {
+  it.printf(x, y, headerFont, "%s", room);
+  it.printf(x, y + 35, dataFont, "%s °C", tempSensor->state.c_str());
+}
+
+void sunSetRise(int x, int y, esphome::image::Image *icn,
+                esphome::homeassistant::HomeassistantTextSensor *time,
+                display::Display &it, esphome::font::Font *font) {
+  it.image(x, y + font->get_height() / 2, icn, ImageAlign::CENTER_LEFT);
+  if (time->has_state()) {
+    it.printf(x + icn->get_width() + 5, y, font, "%s", time->state.c_str());
+  } else {
+    it.print(x + icn->get_width() + 5, y, font, "load...");
+  }
+}
+
+void forecast(int x, int y, esphome::image::Image *icnFc,
+              esphome::image::Image *icnRain,
+              esphome::homeassistant::HomeassistantTextSensor *temp,
+              esphome::homeassistant::HomeassistantTextSensor *rain,
+              display::Display &it, esphome::font::Font *font) {
+  // weather condition
+  it.image(x, y, icnFc);
+
+  int fontHeight = font->get_height();
+  int lineHeight = font->get_height() + 1;
+  int icnFcHeight = icnFc->get_height() * .90;
+
+  // temp
+  it.printf(x + icnFc->get_width() / 2, y + icnFcHeight, font,
+            TextAlign::TOP_CENTER, "%s °C", temp->state.c_str());
+  // rain probability
+  it.image((x + icnFc->get_width() / 2) - lineHeight,
+           y + 2 + icnFcHeight + lineHeight + fontHeight / 2, icnRain,
+           ImageAlign::CENTER_RIGHT);
+  it.printf(x + icnFc->get_width() / 2 + 30 / 2,
+            y + lineHeight + icnFcHeight, font, TextAlign::TOP_CENTER,
+            "%s %%", rain->state.c_str());
+}
