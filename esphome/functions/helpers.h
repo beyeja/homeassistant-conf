@@ -49,6 +49,29 @@ esphome::image::Image *forecastIcon(std::__cxx11::string forecastVal, bool xl) {
   }
 }
 
+void forecast(int x, int y, esphome::image::Image *icnFc,
+              esphome::image::Image *icnRain,
+              esphome::homeassistant::HomeassistantSensor *temp,
+              esphome::homeassistant::HomeassistantSensor *rain,
+              display::Display &it, esphome::font::Font *font) {
+  // weather condition
+  it.image(x, y, icnFc);
+
+  int fontHeight = font->get_height();
+  int lineHeight = fontHeight;
+  int icnFcHeight = icnFc->get_height() * .95;
+
+  // temp
+  it.printf(x + icnFc->get_width() / 2, y + icnFcHeight, font,
+            TextAlign::TOP_CENTER, "%.0f °C", temp->state);
+  // rain probability
+  it.image((x + icnFc->get_width() / 2) - lineHeight * .75,
+           y + 2 + icnFcHeight + lineHeight + fontHeight / 2, icnRain,
+           ImageAlign::CENTER_RIGHT);
+  it.printf(x + icnFc->get_width() / 2 + 30 / 2, y + lineHeight + icnFcHeight,
+            font, TextAlign::TOP_CENTER, "%.0f %%", rain->state);
+}
+
 void plant(int x, int y, float val, esphome::image::Image *icn,
            display::Display &it, esphome::font::Font *font) {
   int progressH = 100;
@@ -74,7 +97,7 @@ void plant(int x, int y, float val, esphome::image::Image *icn,
   // render tick-marks
   int tickInterval = 20;
   int tickLn = 10;
-  for (int i = tickInterval; i < progressH; i += tickInterval) {
+  for(int i = tickInterval; i < progressH; i += tickInterval) {
     if (i >= progressH - fillHeight)
       it.line(barX + 2, barY + i, barX + tickLn, barY + i, COLOR_OFF);
     else
@@ -87,11 +110,25 @@ void plant(int x, int y, float val, esphome::image::Image *icn,
 }
 
 void roomInfo(int x, int y, char *room,
-              esphome::homeassistant::HomeassistantTextSensor *tempSensor,
-              display::Display &it, esphome::font::Font *headerFont,
-              esphome::font::Font *dataFont) {
+              esphome::homeassistant::HomeassistantSensor *tempSensor,
+              esphome::sensor::Sensor *sensor2,
+              esphome::sensor::Sensor *sensor3, 
+              esphome::image::Image *icnHumidity, display::Display &it,
+              esphome::font::Font *headerFont, esphome::font::Font *dataFont) {
+  int lineHeight = dataFont->get_height() + 1;
+  int headerHeight = headerFont->get_height() + 1;
+
   it.printf(x, y, headerFont, "%s", room);
-  it.printf(x, y + 35, dataFont, "%s °C", tempSensor->state.c_str());
+  it.printf(x, y + headerHeight, dataFont, "%.1f °C",
+            tempSensor->state);
+  if (sensor2 != NULL) {
+    it.printf(x, y + headerHeight + lineHeight, dataFont, "%.1f °C", sensor2->state);
+  }
+  // humidity
+  if (sensor3 != NULL) {
+    it.image(x + 110, y + headerHeight + lineHeight + lineHeight / 2, icnHumidity, ImageAlign::CENTER_LEFT);
+    it.printf(x + 110 + icnHumidity->get_width(), y + headerHeight + lineHeight, dataFont, "%.1f %%", sensor3->state);
+  }
 }
 
 void sunSetRise(int x, int y, esphome::image::Image *icn,
@@ -103,28 +140,4 @@ void sunSetRise(int x, int y, esphome::image::Image *icn,
   } else {
     it.print(x + icn->get_width() + 5, y, font, "load...");
   }
-}
-
-void forecast(int x, int y, esphome::image::Image *icnFc,
-              esphome::image::Image *icnRain,
-              esphome::homeassistant::HomeassistantTextSensor *temp,
-              esphome::homeassistant::HomeassistantTextSensor *rain,
-              display::Display &it, esphome::font::Font *font) {
-  // weather condition
-  it.image(x, y, icnFc);
-
-  int fontHeight = font->get_height();
-  int lineHeight = font->get_height() + 1;
-  int icnFcHeight = icnFc->get_height() * .90;
-
-  // temp
-  it.printf(x + icnFc->get_width() / 2, y + icnFcHeight, font,
-            TextAlign::TOP_CENTER, "%s °C", temp->state.c_str());
-  // rain probability
-  it.image((x + icnFc->get_width() / 2) - lineHeight,
-           y + 2 + icnFcHeight + lineHeight + fontHeight / 2, icnRain,
-           ImageAlign::CENTER_RIGHT);
-  it.printf(x + icnFc->get_width() / 2 + 30 / 2,
-            y + lineHeight + icnFcHeight, font, TextAlign::TOP_CENTER,
-            "%s %%", rain->state.c_str());
 }
