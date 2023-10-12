@@ -7,22 +7,6 @@ esphome:
     then:
       - logger.log: "On Boot Event triggered"
 
-# external_components:
-#   # replace 1234 with the number of the Pull Request
-#   - source: github://pr#4710
-#     components:
-#       # list all components modified by this Pull Request here
-#       - online_image
-
-# online_image:
-#   - url: "https://upload.wikimedia.org/wikipedia/commons/3/33/Neighborhood_watch_bw.png"
-#     id: dashboardCapture
-#     on_error:
-#       - logger.log: "Could not download the image"
-#     type: BINARY
-#     on_download_finished:
-#       - component.update: displayComponent
-
 esp32:
   board: lolin32
 
