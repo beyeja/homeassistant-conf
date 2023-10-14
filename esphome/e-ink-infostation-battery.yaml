@@ -30,6 +30,17 @@ wifi:
     ssid: "E-Ink-Infostation"
     password: !secret wifi_ap_password
 
+globals:
+  - id: BATT_EMPTY_VOLT
+    type: float
+    restore_value: False
+    initial_value: '3'
+    
+  - id: BATT_MAX_VOLT
+    type: float
+    restore_value: False
+    initial_value: '4.2'
+
 output:
   - platform: gpio
     pin: GPIO14
@@ -63,6 +74,26 @@ sensor:
     name: "Uptime"
     update_interval: 60s
     icon: mdi:clock-outline
+
+  - platform: adc
+    pin: 36
+    attenuation: 11db
+    name: "Battery Voltage"
+    device_class: voltage
+    update_interval: 10s
+    filters: 
+      - lambda: return x*2;
+
+  - platform: adc
+    id: batteryLevel
+    name: "Battery Level"
+    pin: 36
+    attenuation: 11db
+    update_interval: 10s
+    device_class: battery
+    filters: 
+      - lambda: return ((x*2) - id(BATT_EMPTY_VOLT)) / (id(BATT_MAX_VOLT) - id(BATT_EMPTY_VOLT)) * 100;
+    unit_of_measurement: "%"
 
     # plant sensors
   - platform: homeassistant
@@ -207,6 +238,9 @@ text_sensor:
 
 font:
   # gfonts://family[@weight]
+  - file: "fonts/Micro-Six_8px.ttf"
+    id: microSix
+    size: 8
   - file: "fonts/VCR_OSD_MONO_1.001_21px.ttf"
     id: vcrMonoFont
     size: 21
@@ -319,11 +353,15 @@ image:
     id: icnFlower
     resize: 30x30
 
+time:
+  - platform: homeassistant
+    id: esptime
+
 display:
   - platform: waveshare_epaper
     id: displayComponent
     model: 7.50in-bv3
-    busy_pin: GPIO4
+    busy_pin: GPIO16
     reset_pin: GPIO3
     
     cs_pin: GPIO5 # chip select (SS) # when to listen for data
@@ -350,6 +388,10 @@ display:
 
       // for layout debugging
       layoutLines(it, sX, sY, w, h);
+      // data for debugging
+      it.strftime(sX + 0, sY + 742, id(microSix), "%Y.%m:%d %H:%M", id(esptime).now());
+      // data for debugging
+      it.printf(sX + 100, sY + 742, id(microSix), "%.0f %%", id(batteryLevel).state);
 
       // weather forecast today
       forecast(sX + 35, sY, forecastIcon(id(weatherCondition).state, true), 
