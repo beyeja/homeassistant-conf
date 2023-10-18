@@ -33,24 +33,39 @@ wifi:
 globals:
   - id: BATT_EMPTY_VOLT
     type: float
-    restore_value: False
+    restore_value: True
     initial_value: '3'
     
   - id: BATT_MAX_VOLT
     type: float
-    restore_value: False
+    restore_value: True
     initial_value: '4.2'
 
 output:
   - platform: gpio
+    id: displayPrwPin
     pin: GPIO14
     inverted: True
-    id: displayPrwPin
 
 deep_sleep: 
-  # run_duration: 120s
-  sleep_duration: 15min
   id: deepSleepComponent
+  run_duration: 120s # this is the max awake time, proper sleep is inplemented in actions
+  sleep_duration: 15min
+
+script:
+  - id: scriptConsiderSleep
+    mode: queued
+    then:
+      - lambda: |-
+          ESP_LOGD("scriptConsiderSleep", "considering going to sleep in 5 seconds...");
+      - delay: 5s
+      - if:
+          condition:
+            binary_sensor.is_on: noSleepMode
+          then:
+            - logger.log: 'Skipping sleep, per prevent_deep_sleep'
+          else:
+            - deep_sleep.enter: deepSleepComponent 
 
 i2c:
   scan: False
@@ -63,6 +78,17 @@ spi:
     clk_pin: GPIO18 # SCK # when to read data
     mosi_pin: GPIO23 # aka SDO (serial data out - send data)
     # miso_pin: # aka SDI (serial data in - receive data)  
+
+binary_sensor:
+  # avoids sleep of esp for updates and dev
+  - platform: homeassistant
+    id: noSleepMode
+    entity_id: input_boolean.esp_no_sleep
+    internal: true
+    # on_state: 
+    #   then:
+    #     - deep_sleep.prevent: deepSleepComponent
+    #     - deep_sleep.allow: deepSleepComponent
 
 sensor:
   - platform: wifi_signal
@@ -80,16 +106,20 @@ sensor:
     attenuation: 11db
     name: "Battery Voltage"
     device_class: voltage
-    update_interval: 10s
+    update_interval: 60s
     filters: 
-      - lambda: return x*2;
+      - multiply: 2
+      # - median: 
+      #     window_size: 7
+      #     send_every: 4
+      #     send_first_at: 3
 
   - platform: adc
     id: batteryLevel
     name: "Battery Level"
     pin: 36
     attenuation: 11db
-    update_interval: 10s
+    update_interval: 60s
     device_class: battery
     filters: 
       - lambda: return ((x*2) - id(BATT_EMPTY_VOLT)) / (id(BATT_MAX_VOLT) - id(BATT_EMPTY_VOLT)) * 100;
@@ -147,13 +177,10 @@ sensor:
     on_value: 
       then:
         - lambda: |-
-            ESP_LOGD("main", "On Value triggered for temp sensor: %.1f", x);
+            ESP_LOGD("main", "Main value temp sensor (%.1f) updated updating screen...", x);
         - component.update: displayComponent
-        - lambda: |-
-            ESP_LOGD("main", "Going to sleep in 5 seconds...");
         - delay: 5s
-        - deep_sleep.enter: 
-            id: deepSleepComponent
+        - script.execute: scriptConsiderSleep
   - platform: homeassistant
     id: rainProbab
     entity_id: sensor.esphome_weather_forecast
