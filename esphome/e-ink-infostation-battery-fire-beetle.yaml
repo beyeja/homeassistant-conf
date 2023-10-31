@@ -1,0 +1,481 @@
+esphome:
+  name: e-ink-infostation-battery
+  friendly_name: E-Ink Infostation Battery
+  includes:
+    - functions/helpers.h
+  on_boot: 
+    then:
+      - logger.log: "On Boot Event triggered"
+
+esp32:
+  board: lolin32
+
+# Enable logging
+logger:
+  level: VERBOSE
+
+# Enable Home Assistant API
+api:
+  encryption:
+
+ota:
+  password: !secret ota_password
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "E-Ink-Infostation"
+    password: !secret wifi_ap_password
+
+globals:
+  - id: BATT_EMPTY_VOLT
+    type: float
+    restore_value: True
+    initial_value: '3'
+    
+  - id: BATT_MAX_VOLT
+    type: float
+    restore_value: True
+    initial_value: '4.2'
+
+output:
+  - platform: gpio
+    id: displayPrwPin
+    pin: GPIO14
+    inverted: True
+  - platform: gpio
+    id: builtInLEDPin
+    pin: GPIO2
+    inverted: True
+
+deep_sleep: 
+  id: deepSleepComponent
+  # run_duration: 120s # this is the max awake time, proper sleep is inplemented in actions
+  sleep_duration: 15min
+
+script:
+  - id: scriptConsiderSleep
+    mode: queued
+    then:
+      - lambda: |-
+          ESP_LOGD("scriptConsiderSleep", "considering going to sleep in 5 seconds...");
+      - delay: 5s
+      - if:
+          condition:
+            binary_sensor.is_on: noSleepMode
+          then:
+            - logger.log: 'Skipping sleep, per prevent_deep_sleep'
+          else:
+            - deep_sleep.enter: deepSleepComponent 
+
+i2c:
+  scan: False
+  id: bus_a  
+  sda: GPIO21
+  scl: GPIO22
+
+spi:
+  - id: spiBus0
+    clk_pin: GPIO18 # SCK # when to read data
+    mosi_pin: GPIO19 # aka SDO (serial data out - send data)
+    # miso_pin: # aka SDI (serial data in - receive data)  
+
+binary_sensor:
+  # avoids sleep of esp for updates and dev
+  - platform: homeassistant
+    id: noSleepMode
+    entity_id: input_boolean.esp_no_sleep
+    internal: true
+    # on_state: 
+    #   then:
+    #     - deep_sleep.prevent: deepSleepComponent
+    #     - deep_sleep.allow: deepSleepComponent
+    
+sensor:
+  - platform: wifi_signal
+    name: "WiFi Signal"
+    update_interval: 60s
+    icon: mdi:wifi
+
+  - platform: uptime
+    name: "Uptime"
+    update_interval: 60s
+    icon: mdi:clock-outline
+
+  - platform: adc
+    id: batteryVoltageSensor
+    pin: 34
+    attenuation: 11db
+    name: "Battery Voltage"
+    device_class: voltage
+    update_interval: 500ms
+    filters: 
+      - multiply: 2
+      - median:
+          window_size: 6
+          send_every: 4
+
+  - platform: template
+    name: "Battery Level"
+    id: batteryLevel
+    device_class: battery
+    filters: 
+      - lambda: |-
+          return ((id(batteryVoltageSensor).state * 2) - id(BATT_EMPTY_VOLT)) / (id(BATT_MAX_VOLT) - id(BATT_EMPTY_VOLT)) * 100;
+    unit_of_measurement: "%"
+
+    # plant sensors
+  - platform: homeassistant
+    id: plant0060
+    entity_id: sensor.plant_sensor_0060_moisture
+    internal: true
+  - platform: homeassistant
+    id: plant0815
+    entity_id: sensor.plant_sensor_0815_moisture
+    internal: true
+  - platform: homeassistant
+    id: plant6c13
+    entity_id: sensor.plant_sensor_6c13_moisture
+    internal: true
+  - platform: homeassistant
+    id: plant6c26
+    entity_id: sensor.plant_sensor_6c26_moisture
+    internal: true
+  - platform: homeassistant
+    id: plant6c37
+    entity_id: sensor.plant_sensor_6c37_moisture
+    internal: true
+
+    # room temp sensors
+  - platform: homeassistant
+    id: tempLivingroom
+    entity_id: sensor.plant_sensor_0060_temperature
+    internal: true
+  - platform: homeassistant
+    id: tempBedroom
+    entity_id: sensor.plant_sensor_6c13_temperature
+    internal: true
+  - platform: homeassistant
+    id: tempBathroom
+    entity_id: sensor.plant_sensor_6c26_temperature
+    internal: true
+  - platform: homeassistant
+    id: tempBalcony
+    entity_id: sensor.plant_sensor_0815_temperature
+    internal: true
+    
+    # weather infos
+  - platform: homeassistant
+    id: temp
+    entity_id: sensor.esphome_weather_forecast
+    attribute: temperature
+    internal: true
+    filters: 
+      - lambda: return round(x);
+    # main temp sensor used for screen and sleep update event
+    on_value: 
+      then:
+        - lambda: |-
+            ESP_LOGD("main", "Main value temp sensor (%.1f) updated updating screen...", x);
+        - component.update: displayComponent
+        - delay: 5s
+        - script.execute: scriptConsiderSleep
+  - platform: homeassistant
+    id: rainProbab
+    entity_id: sensor.esphome_weather_forecast
+    attribute: precipitation_probability
+    internal: true
+    filters: 
+      - lambda: return round(x);
+  - platform: homeassistant
+    id: tempDay1
+    entity_id: sensor.esphome_weather_forecast
+    attribute: day_1_temperature
+    internal: true
+    filters: 
+      - lambda: return round(x);
+  - platform: homeassistant
+    id: rainProbabDay1
+    entity_id: sensor.esphome_weather_forecast
+    attribute: day_1_precipitation_probability
+    internal: true
+    filters: 
+      - lambda: return round(x);
+  - platform: homeassistant
+    id: tempDay2
+    entity_id: sensor.esphome_weather_forecast
+    attribute: day_2_temperature
+    internal: true
+    filters: 
+      - lambda: return round(x);
+  - platform: homeassistant
+    id: rainProbabDay2
+    entity_id: sensor.esphome_weather_forecast
+    attribute: day_2_precipitation_probability
+    internal: true
+    filters: 
+      - lambda: return round(x);
+
+    # local esp sensor
+  - platform: bme280
+    i2c_id: bus_a  
+    address: 0x76
+    temperature:
+      name: "BME280 Temperature"
+      id: internalTemp
+      accuracy_decimals: 1
+      oversampling: 16x
+    pressure:
+      name: "BME280 Pressure"
+      accuracy_decimals: 1
+    humidity:
+      name: "BME280 Humidity"
+      id: internalHumidity
+      accuracy_decimals: 1
+    update_interval: 5s  
+
+text_sensor:
+  - platform: homeassistant
+    id: weatherCondition
+    entity_id: sensor.esphome_weather_forecast
+    attribute: condition
+    internal: true
+    filters: 
+  - platform: homeassistant
+    id: weatherConditionDay1
+    entity_id: sensor.esphome_weather_forecast
+    attribute: day_1_condition
+    internal: true
+  - platform: homeassistant
+    id: weatherConditionDay2
+    entity_id: sensor.esphome_weather_forecast
+    attribute: day_2_condition
+    internal: true
+
+  # sunset and sunrise
+  - platform: homeassistant
+    id: nextSunSetString
+    entity_id: sensor.esphome_next_sunset_as_string
+    internal: true
+  - platform: homeassistant
+    id: nextSunRiseString
+    entity_id: sensor.esphome_next_sunrise_as_string
+    internal: true
+
+font:
+  # gfonts://family[@weight]
+  - file: "fonts/Micro-Six_8px.ttf"
+    id: microSix
+    size: 8
+  - file: "fonts/VCR_OSD_MONO_1.001_21px.ttf"
+    id: vcrMonoFont
+    size: 21
+  - file: "fonts/roundedsquare_22.ttf"
+    id: roundedFont
+    size: 22
+  - file: "gfonts://Roboto@700"
+    id: robotoFontSmall
+    size: 20
+  - file: "gfonts://Roboto@700"
+    id: robotoFontMed
+    size: 27
+  - file: "gfonts://Roboto@700"
+    id: robotoFontLarge
+    size: 36
+
+image:
+  - file: mdi:solar-panel-large
+    id: icnSolarPanelXL
+    resize: 30x30
+    type: BINARY
+  - file: mdi:water-thermometer-outline
+    id: icnThermostatXL
+    resize: 30x30
+  - file: mdi:weather-sunset-down
+    id: icnSunSet
+    resize: 25x25
+  - file: mdi:weather-sunset-up
+    id: icnSunRise
+    resize: 25x25
+  - file: mdi:weather-pouring
+    id: icnRainProbability
+    resize: 30x30
+  - file: mdi:water-percent
+    id: icnHumidity
+    resize: 30x30
+
+  # forecast images large
+  - file: mdi:weather-sunny
+    id: icnSunnyXL
+    resize: 200x200
+  - file: mdi:weather-night
+    id: icnClearNightXL
+    resize: 200x200
+  - file: mdi:weather-cloudy
+    id: icnCloudyXL
+    resize: 200x200
+  - file: mdi:weather-rainy
+    id: icnRainyXL
+    resize: 200x200
+  - file: mdi:weather-snowy-rainy
+    id: icnSleetXL
+    resize: 200x200
+  - file: mdi:weather-snowy
+    id: icnSnowXL
+    resize: 200x200
+  - file: mdi:weather-windy
+    id: icnWindXL
+    resize: 200x200
+  - file: mdi:weather-fog
+    id: icnFogXL
+    resize: 200x200
+  - file: mdi:weather-partly-cloudy
+    id: icnPartlyCloudyXL
+    resize: 200x200
+
+  # forecast images small
+  - file: mdi:weather-sunny
+    id: icnSunnyMD
+    resize: 80x80
+  - file: mdi:weather-night
+    id: icnClearNightMD
+    resize: 80x80
+  - file: mdi:weather-cloudy
+    id: icnCloudyMD
+    resize: 80x80
+  - file: mdi:weather-rainy
+    id: icnRainyMD
+    resize: 80x80
+  - file: mdi:weather-snowy-rainy
+    id: icnSleetMD
+    resize: 80x80
+  - file: mdi:weather-snowy
+    id: icnSnowMD
+    resize: 80x80
+  - file: mdi:weather-windy
+    id: icnWindMD
+    resize: 80x80
+  - file: mdi:weather-fog
+    id: icnFogMD
+    resize: 80x80
+  - file: mdi:weather-partly-cloudy
+    id: icnPartlyCloudyMD
+    resize: 80x80
+
+    # plants
+  - file: mdi:cactus
+    id: icnCactus
+    resize: 30x30
+  - file: mdi:fruit-pineapple
+    id: icnPineapple
+    resize: 30x30
+  - file: mdi:tree-outline
+    id: icnTree
+    resize: 30x30
+  - file: mdi:sprout-outline
+    id: icnSprout
+    resize: 30x30
+  - file: mdi:flower-tulip-outline
+    id: icnFlower
+    resize: 30x30
+
+time:
+  - platform: homeassistant
+    id: esptime
+
+display:
+  - platform: waveshare_epaper
+    id: displayComponent
+    model: 7.50in-bv3
+    busy_pin: GPIO12
+    reset_pin: GPIO1
+    
+    cs_pin: GPIO23 # chip select (SS) # when to listen for data
+    dc_pin: GPIO3 # ?
+    spi_id: spiBus0
+    
+    on_page_change: 
+      then:
+        - lambda: |-
+            ESP_LOGD("main", "Display page change triggered");
+      
+    # full_update_every: 1
+    update_interval: never # this is only initial value -> gets set to longer after first values loaded
+    reset_duration: 2ms
+    rotation: 270
+    # auto_clear_enabled: true
+    lambda: |-
+      //display is 800x480
+      int sX = 0;
+      int sY = 25;
+      int w = it.get_width() - sX;
+      int h = it.get_height() - 25 - sY;
+      int divMargin = 25;
+
+      // for layout debugging
+      layoutLines(it, sX, sY, w, h);
+      // data for debugging
+      it.strftime(sX + 0, sY + 742, id(microSix), "%Y.%m:%d %H:%M", id(esptime).now());
+      // data for debugging
+      it.printf(sX + 100, sY + 742, id(microSix), "%.0f %%", id(batteryLevel).state);
+
+      // weather forecast today
+      forecast(sX + 35, sY, forecastIcon(id(weatherCondition).state, true), 
+              id(icnRainProbability), temp, rainProbab, it, id(robotoFontLarge));
+      // weather forecast tomorrow
+      forecast(sX + 325, sY, forecastIcon(id(weatherConditionDay1).state, false), 
+              id(icnRainProbability), tempDay1, rainProbabDay1, it, id(robotoFontMed));
+      // weather forecast day after tomorrow
+      forecast(sX + 325, sY + 155, forecastIcon(id(weatherConditionDay2).state, false), 
+              id(icnRainProbability), tempDay2, rainProbabDay2, it, id(robotoFontMed));
+      
+      // sunrise
+      sunSetRise(sX + 10, sY + 275, id(icnSunRise), id(nextSunRiseString), it, id(robotoFontSmall));
+      // sunset
+      sunSetRise(sX + 165, sY + 275, id(icnSunSet), id(nextSunSetString), it, id(robotoFontSmall));
+      
+      int qH = 225, qY = sY + 325;   // height of whole grid, startY of grid
+      int q1X = sX;             // grid col 1 start x 
+      int q2X = (q2X + w) / 2;  // grid col 2 start x 
+      int q1Y = qY;       // grid row 1 start y 
+      int q2Y = qY + qH / 2;   // grid row 2 start y 
+      // horizontal
+      it.line(q1X + 10, q2Y, sX + w - 10, q2Y);
+      // vertical
+      it.line(q2X, q1Y + 5, q2X, q1Y + qH - 5);
+      
+      // temps rooms
+      roomInfo(q1X + 10, q1Y, 
+              "Wohnzimmer", id(tempLivingroom), id(internalTemp), id(internalHumidity),               
+              id(icnHumidity), it, id(roundedFont), id(robotoFontMed));
+      roomInfo(q2X + 10, q1Y, 
+              "Balkon", id(tempBalcony), NULL, NULL, NULL,
+              it, id(roundedFont), id(robotoFontMed));
+      roomInfo(q1X + 10, q2Y + 10, 
+              "Bad", id(tempBathroom), NULL, NULL, NULL,
+              it, id(roundedFont), id(robotoFontMed));
+      roomInfo(q2X + 10, q2Y + 10, 
+              "Schlafzimmer", id(tempBedroom), NULL, NULL, NULL,
+              it, id(roundedFont), id(robotoFontMed));
+      
+      // plants
+      plant(sX + 240, sY + 590, 
+          id(plant0060).has_state() ? id(plant0060).state : -1, 
+          id(icnCactus), it, id(vcrMonoFont));
+      plant(sX + 290, sY + 590, 
+          id(plant0815).has_state() ? id(plant0815).state : -1, 
+          id(icnSprout), it, id(vcrMonoFont));
+      plant(sX + 340, sY + 590, 
+          id(plant6c13).has_state() ? id(plant6c13).state : -1, 
+          id(icnPineapple), it, id(vcrMonoFont));
+      plant(sX + 390, sY + 590, 
+          id(plant6c26).has_state() ? id(plant6c26).state : -1, 
+          id(icnTree), it, id(vcrMonoFont));
+      plant(sX + 440, sY + 590, 
+          id(plant6c37).has_state() ? id(plant6c37).state : -1, 
+          id(icnFlower), it, id(vcrMonoFont));
+
+captive_portal:
