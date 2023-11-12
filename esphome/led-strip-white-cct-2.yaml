@@ -4,8 +4,6 @@ esphome:
 
 esp8266:
   board: esp01_1m
-  # framework:
-  #   version: 2.7.4
 
 # Enable logging
 logger:
@@ -13,22 +11,13 @@ logger:
 # WLED Config:
 # WS2811 colorOrder:BRG numLED: 17 GPIO: 1 maxAmp: 2000mA perLEDAmp: 50mA 
 
-external_components:
-  - source: github://pr#4257
-    components: [fastled]
-    refresh: always
-
 light:
   - platform: neopixelbus
     type: "BRG"
-    pin: GPIO1
-    num_leds: 19
-    name: "LED Strip White CCT 1"
+    pin: GPIO3
+    num_leds: 17
+    name: "LED Strip White CCT 2"
     variant: ws2811
-    # method: 
-    #   type: esp8266_uart # trying to resolve flicker on color change
-    #   bus: 0
-    #   async: False
     
 # Enable Home Assistant API
 api:

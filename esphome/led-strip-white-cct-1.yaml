@@ -13,14 +13,31 @@ logger:
 # WLED Config:
 # WS2811 colorOrder:BRG numLED: 19 GPIO: 1 maxAmp: 2000mA perLEDAmp: 50mA 
 
-# light:
-#   - platform: fastled_clockless
-#     chipset: WS2811
-#     pin: GPIO1
-#     num_leds: 19
-#     rgb_order: BRG
-#     name: "LED Strip White CCT 1"
+external_components:
+  - source: github://pr#4257
+    components: [fastled]
+    refresh: always
 
+light:
+  - platform: neopixelbus
+    type: "BRG"
+    pin: GPIO3
+    num_leds: 19
+    name: "LED Strip White CCT 1"
+    variant: ws2811
+    # method: 
+    #   type: esp8266_uart # trying to resolve flicker on color change
+    #   bus: 0
+    #   async: False
+
+  # - platform: fastled
+  #   chipset: WS2811
+  #   data_pin: GPIO3
+  #   num_leds: 19
+  #   rgb_order: BRG
+  #   name: "LED Strip White CCT 1"
+        
+    
 # Enable Home Assistant API
 api:
   encryption:
@@ -35,7 +52,7 @@ wifi:
 
   # Enable fallback hotspot (captive portal) in case wifi connection fails
   ap:
-    ssid: "Esp-Led-Strip-1 Fallback Hotspot"
+    ssid: "Led-Strip-White-Cct-2"
     password: !secret wifi_ap_password
 
 captive_portal:
