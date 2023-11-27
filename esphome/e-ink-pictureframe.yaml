@@ -1,11 +1,17 @@
 esphome:
-  name: e-ink-infostation-battery
-  friendly_name: E-Ink Infostation Battery
+  name: e-ink-pictureframe
+  friendly_name: E-Ink Pictureframe
   includes:
-    - functions/helpers.h
-  on_boot: 
-    then:
-      - logger.log: "On Boot Event triggered"
+    - functions/helpers.h  
+  # on_loop: 
+  #   then: 
+  #     - lambda: |-
+  #         ESP_LOGD("DEBUG", "Looping");
+
+# Enable Home Assistant API
+# api:
+#   encryption:
+#     key: "8+XUPRueXSjh7PkegEH0wNTJcM9gVrzsVFA0317HYNI="
 
 esp32:
   board: firebeetle32
@@ -20,7 +26,8 @@ api:
     key: !secret enc_default
 
 ota:
-  password: !secret ota_password
+  # password: !secret ota_password
+  password: "c00cddd74f52489c53801e26986d06ad"
 
 wifi:
   ssid: !secret wifi_ssid
@@ -45,12 +52,12 @@ globals:
 output:
   - platform: gpio
     id: displayPrwPin
-    pin: GPIO14
+    pin: GPIO4
     inverted: True
-  - platform: gpio
-    id: builtInLEDPin
-    pin: GPIO2
-    inverted: True
+  # - platform: gpio
+  #   id: builtInLEDPin
+  #   pin: GPIO2
+  #   inverted: True
 
 deep_sleep: 
   id: deepSleepComponent
@@ -112,21 +119,22 @@ sensor:
     attenuation: 11db
     name: "Battery Voltage"
     device_class: voltage
-    update_interval: 500ms
+    update_interval: 250s
     filters: 
       - multiply: 2
       - median:
           window_size: 6
           send_every: 4
-
+   
   - platform: template
     name: "Battery Level"
     id: batteryLevel
     device_class: battery
-    filters: 
-      - lambda: |-
-          return ((id(batteryVoltageSensor).state * 2) - id(BATT_EMPTY_VOLT)) / (id(BATT_MAX_VOLT) - id(BATT_EMPTY_VOLT)) * 100;
+    # filters: 
+    lambda: |-
+          return ((id(batteryVoltageSensor).state) - id(BATT_EMPTY_VOLT)) / (id(BATT_MAX_VOLT) - id(BATT_EMPTY_VOLT)) * 100;
     unit_of_measurement: "%"
+    update_interval: 2s
 
     # plant sensors
   - platform: homeassistant
@@ -150,14 +158,14 @@ sensor:
     entity_id: sensor.plant_sensor_6c37_moisture
     internal: true
 
-    # room temp sensors
+    # climate sensors
   - platform: homeassistant
-    id: tempLivingroom
-    entity_id: sensor.plant_sensor_0060_temperature
+    id: humidBedroom
+    entity_id: sensor.multisensor_1_humidity_24
     internal: true
   - platform: homeassistant
     id: tempBedroom
-    entity_id: sensor.plant_sensor_6c13_temperature
+    entity_id: sensor.multisensor_1_temperature_23
     internal: true
   - platform: homeassistant
     id: tempBathroom
@@ -180,7 +188,7 @@ sensor:
     on_value: 
       then:
         - lambda: |-
-            ESP_LOGD("main", "Main value temp sensor (%.1f) updated updating screen...", x);
+            ESP_LOGD("main", "Main value temp sensor (%.1f) updated updating screen....", x);
         - component.update: displayComponent
         - delay: 5s
         - script.execute: scriptConsiderSleep
@@ -285,7 +293,7 @@ font:
     size: 27
   - file: "gfonts://Roboto@700"
     id: robotoFontLarge
-    size: 36
+    size: 40
 
 image:
   - file: mdi:solar-panel-large
@@ -397,17 +405,16 @@ display:
     cs_pin: GPIO23 # chip select (SS) # when to listen for data
     dc_pin: GPIO3 # ?
     spi_id: spiBus0
-    
+
     on_page_change: 
       then:
         - lambda: |-
             ESP_LOGD("main", "Display page change triggered");
       
-    # full_update_every: 1
     update_interval: never # this is only initial value -> gets set to longer after first values loaded
-    reset_duration: 2ms
+    reset_duration: 500ms
     rotation: 270
-    # auto_clear_enabled: true
+    auto_clear_enabled: true
     lambda: |-
       //display is 800x480
       int sX = 0;
@@ -420,8 +427,8 @@ display:
       layoutLines(it, sX, sY, w, h);
       // data for debugging
       it.strftime(sX + 0, sY + 742, id(microSix), "%Y.%m:%d %H:%M", id(esptime).now());
-      // data for debugging
       it.printf(sX + 100, sY + 742, id(microSix), "%.0f %%", id(batteryLevel).state);
+      it.printf(sX + 130, sY + 742, id(microSix), "%.2f V", id(batteryVoltageSensor).state);
 
       // weather forecast today
       forecast(sX + 35, sY, forecastIcon(id(weatherCondition).state, true), 
@@ -434,11 +441,11 @@ display:
               id(icnRainProbability), tempDay2, rainProbabDay2, it, id(robotoFontMed));
       
       // sunrise
-      sunSetRise(sX + 10, sY + 275, id(icnSunRise), id(nextSunRiseString), it, id(robotoFontSmall));
+      sunSetRise(sX + 15, sY + 285, id(icnSunRise), id(nextSunRiseString), it, id(robotoFontSmall));
       // sunset
-      sunSetRise(sX + 165, sY + 275, id(icnSunSet), id(nextSunSetString), it, id(robotoFontSmall));
+      sunSetRise(sX + 170, sY + 285, id(icnSunSet), id(nextSunSetString), it, id(robotoFontSmall));
       
-      int qH = 225, qY = sY + 325;   // height of whole grid, startY of grid
+      int qH = 225, qY = sY + 330;   // height of whole grid, startY of grid
       int q1X = sX;             // grid col 1 start x 
       int q2X = (q2X + w) / 2;  // grid col 2 start x 
       int q1Y = qY;       // grid row 1 start y 
@@ -450,17 +457,17 @@ display:
       
       // temps rooms
       roomInfo(q1X + 10, q1Y, 
-              "Wohnzimmer", id(tempLivingroom), id(internalTemp), id(internalHumidity),               
+              "Wohnzimmer", NULL, NULL, id(internalTemp), id(internalHumidity), 
               id(icnHumidity), it, id(roundedFont), id(robotoFontMed));
       roomInfo(q2X + 10, q1Y, 
               "Balkon", id(tempBalcony), NULL, NULL, NULL,
-              it, id(roundedFont), id(robotoFontMed));
+              id(icnHumidity), it, id(roundedFont), id(robotoFontMed));
       roomInfo(q1X + 10, q2Y + 10, 
               "Bad", id(tempBathroom), NULL, NULL, NULL,
-              it, id(roundedFont), id(robotoFontMed));
+              id(icnHumidity), it, id(roundedFont), id(robotoFontMed));
       roomInfo(q2X + 10, q2Y + 10, 
-              "Schlafzimmer", id(tempBedroom), NULL, NULL, NULL,
-              it, id(roundedFont), id(robotoFontMed));
+              "Schlafzimmer", id(tempBedroom), id(humidBedroom), NULL, NULL, 
+              id(icnHumidity), it, id(roundedFont), id(robotoFontMed));
       
       // plants
       plant(sX + 240, sY + 590, 

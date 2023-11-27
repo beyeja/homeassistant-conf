@@ -26,19 +26,27 @@ void layoutLines(display::Display &it, int sX, int sY, int w, int h) {
 
 // map forecast to icon
 esphome::image::Image *forecastIcon(std::__cxx11::string forecastVal, bool xl) {
-  if (forecastVal == "sunny" || forecastVal == "clear-day") {
+  if (forecastVal == "sunny" 
+  || forecastVal == "clear-day") {
     return &id(xl ? icnSunnyXL : icnSunnyMD);
   } else if (forecastVal == "clear-night") {
     return &id(xl ? icnClearNightXL : icnClearNightMD);
   } else if (forecastVal == "cloudy") {
     return &id(xl ? icnCloudyXL : icnCloudyMD);
-  } else if (forecastVal == "rainy") {
+  } else if (forecastVal == "rainy" 
+          || forecastVal == "lightning" 
+          || forecastVal == "lightning-rainy" 
+          || forecastVal == "hail" 
+          || forecastVal == "pouring"
+          || forecastVal == "exceptional") {
     return &id(xl ? icnRainyXL : icnRainyMD);
   } else if (forecastVal == "sleet") {
     return &id(xl ? icnSleetXL : icnSleetMD);
-  } else if (forecastVal == "snow" || forecastVal == "snowy-rainy") {
+  } else if (forecastVal == "snowy" 
+          || forecastVal == "snowy-rainy") {
     return &id(xl ? icnSnowXL : icnSnowMD);
-  } else if (forecastVal == "wind") {
+  } else if (forecastVal == "windy" 
+          || forecastVal == "windy-variant") {
     return &id(xl ? icnWindXL : icnWindMD);
   } else if (forecastVal == "fog") {
     return &id(xl ? icnFogXL : icnFogMD);
@@ -111,23 +119,29 @@ void plant(int x, int y, float val, esphome::image::Image *icn,
 
 void roomInfo(int x, int y, char *room,
               esphome::homeassistant::HomeassistantSensor *tempSensor,
-              esphome::sensor::Sensor *sensor2,
-              esphome::sensor::Sensor *sensor3, 
+              esphome::homeassistant::HomeassistantSensor *humidSensor,
+              esphome::sensor::Sensor *internalTempSensor, 
+              esphome::sensor::Sensor *internalHumidSensor, 
               esphome::image::Image *icnHumidity, display::Display &it,
               esphome::font::Font *headerFont, esphome::font::Font *dataFont) {
   int lineHeight = dataFont->get_height() + 1;
   int headerHeight = headerFont->get_height() + 1;
 
+
   it.printf(x, y, headerFont, "%s", room);
-  it.printf(x, y + headerHeight, dataFont, "%.1f °C",
-            tempSensor->state);
-  if (sensor2 != NULL) {
-    it.printf(x, y + headerHeight + lineHeight, dataFont, "%.1f °C", sensor2->state);
+  if (tempSensor != NULL) {
+    it.printf(x, y + headerHeight, dataFont, "%.1f °C", tempSensor->state);
+  } else if (internalTempSensor != NULL) {
+    it.printf(x, y + headerHeight, dataFont, "%.1f °C", internalTempSensor->state);
   }
+
   // humidity
-  if (sensor3 != NULL) {
-    it.image(x + 110, y + headerHeight + lineHeight + lineHeight / 2, icnHumidity, ImageAlign::CENTER_LEFT);
-    it.printf(x + 110 + icnHumidity->get_width(), y + headerHeight + lineHeight, dataFont, "%.1f %%", sensor3->state);
+  if (humidSensor != NULL) {
+    it.image(x + 110, y + headerHeight + lineHeight / 2, icnHumidity, ImageAlign::CENTER_LEFT);
+    it.printf(x + 110 + icnHumidity->get_width(), y + headerHeight, dataFont, "%.1f %%", humidSensor->state);
+  } else if (internalHumidSensor != NULL) {
+    it.image(x + 110, y + headerHeight + lineHeight / 2, icnHumidity, ImageAlign::CENTER_LEFT);
+    it.printf(x + 110 + icnHumidity->get_width(), y + headerHeight, dataFont, "%.1f %%", internalHumidSensor->state);
   }
 }
 
