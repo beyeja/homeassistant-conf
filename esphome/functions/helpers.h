@@ -36,7 +36,7 @@ esphome::image::Image *forecastIcon(std::__cxx11::string forecastVal, bool xl) {
     return &id(xl ? icnRainyXL : icnRainyMD);
   } else if (forecastVal == "sleet") {
     return &id(xl ? icnSleetXL : icnSleetMD);
-  } else if (forecastVal == "snow") {
+  } else if (forecastVal == "snow" || forecastVal == "snowy-rainy") {
     return &id(xl ? icnSnowXL : icnSnowMD);
   } else if (forecastVal == "wind") {
     return &id(xl ? icnWindXL : icnWindMD);
