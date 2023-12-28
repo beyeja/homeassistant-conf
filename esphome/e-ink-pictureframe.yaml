@@ -5,6 +5,8 @@ esphome:
 esp32:
   board: firebeetle32
 
+logger:  
+
 # Enable Home Assistant API
 api:
   encryption:
