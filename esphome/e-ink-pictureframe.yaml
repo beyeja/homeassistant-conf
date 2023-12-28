@@ -9,11 +9,6 @@ esphome:
   #     - lambda: |-
   #         ESP_LOGD("DEBUG", "Looping");
 
-# Enable Home Assistant API
-# api:
-#   encryption:
-#     key: "8+XUPRueXSjh7PkegEH0wNTJcM9gVrzsVFA0317HYNI="
-
 esp32:
   board: firebeetle32
 
@@ -67,7 +62,7 @@ output:
 
 deep_sleep: 
   id: deepSleepComponent
-  # run_duration: 120s # TODO enable, this is the max awake time, proper sleep is inplemented in actions
+  run_duration: 120s # this is the max awake time, proper sleep is inplemented in actions
   sleep_duration: 30min
 
 script:
@@ -75,8 +70,8 @@ script:
     mode: queued
     then:
       - lambda: |-
-          ESP_LOGD("scriptConsiderSleep", "considering going to sleep in 5 seconds...");
-      - delay: 5s
+          ESP_LOGD("scriptConsiderSleep", "considering going to sleep in 1 seconds...");
+      - delay: 1s
       - if:
           condition:
             binary_sensor.is_on: noSleepMode
@@ -196,7 +191,7 @@ sensor:
         - lambda: |-
             ESP_LOGD("main", "Main value temp sensor (%.1f) updated updating --> screen....", x);
         - component.update: displayComponent
-        - delay: 10s
+        - delay: 1s
         - script.execute: scriptConsiderSleep
   - platform: homeassistant
     id: rainProbab
@@ -414,8 +409,8 @@ display:
     dc_pin: GPIO3 # ?
     spi_id: spiBus0
       
-    update_interval: 30s # never # is done by state changes
-    # reset_duration: 2ms
+    update_interval: never # is done by state changes
+    reset_duration: 2ms
     rotation: 270
     auto_clear_enabled: true
     lambda: |-
@@ -426,7 +421,7 @@ display:
       int h = it.get_height() - 25 - sY;
       int divMargin = 25;
 
-      // it.print(100, 100, id(robotoFontMed), "Hello");
+      // it.print(100, 100, id(robotoFontMed), "Hello World");
 
       // for layout debugging
       layoutLines(it, sX, sY, w, h);
