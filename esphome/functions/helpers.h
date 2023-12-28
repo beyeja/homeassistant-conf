@@ -97,10 +97,13 @@ void plant(int x, int y, float val, esphome::image::Image *icn,
   it.line(barX + 2, barY, barX + progressW - 2, barY, COLOR_OFF);
   it.line(barX + 2, barY + 1, barX + progressW - 2, barY + 1, COLOR_OFF);
 
-  int fillHeight = progressH * (val / 100);
-  // fill bar
-  it.filled_rectangle(barX, barY + progressH - fillHeight, progressW,
-                      fillHeight);
+  int fillHeight = 0;
+  if (val > 0 && val <= 100) {
+    int fillHeight = progressH * (val / 100);
+    // fill bar
+    it.filled_rectangle(barX, barY + progressH - fillHeight, progressW,
+                        fillHeight);
+  }
 
   // render tick-marks
   int tickInterval = 20;
