@@ -49,9 +49,13 @@ binary_sensor:
 
 sensor:
   - platform: wifi_signal
-    name: Camera ESP32 Wifi Signal
+    name: "Camera ESP32 Wifi Signal"
     update_interval: 60s
-  
+    icon: mdi:wifi
+  - platform: uptime
+    name: "Uptime"
+    update_interval: 60s
+    icon: mdi:clock-outline  
 
 # Enable logging
 logger:

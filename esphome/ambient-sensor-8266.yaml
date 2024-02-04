@@ -40,6 +40,11 @@ sensor:
     name: "Ambient Sensor WiFi Signal"
     id: "ambient_sensor_8266_wifi_signal"
     update_interval: 60s
+    icon: mdi:wifi
+  - platform: uptime
+    name: "Uptime"
+    update_interval: 60s
+    icon: mdi:clock-outline
   - platform: tcs34725
     i2c_id: bus_a
     # red_channel:

@@ -19,6 +19,20 @@ light:
     name: "LED Strip White CCT 2"
     variant: ws2811
     
+switch:
+  - platform: restart
+    name: "Restart Node"
+
+sensor:
+  - platform: wifi_signal
+    name: "Wifi Signal"
+    update_interval: 60s
+    icon: mdi:wifi
+  - platform: uptime
+    name: "Uptime"
+    update_interval: 60s
+    icon: mdi:clock-outline
+    
 # Enable Home Assistant API
 api:
   encryption:

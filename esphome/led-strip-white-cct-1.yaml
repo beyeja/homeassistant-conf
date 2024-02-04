@@ -13,10 +13,10 @@ logger:
 # WLED Config:
 # WS2811 colorOrder:BRG numLED: 19 GPIO: 1 maxAmp: 2000mA perLEDAmp: 50mA 
 
-external_components:
-  - source: github://pr#4257
-    components: [fastled]
-    refresh: always
+# external_components:
+#   - source: github://pr#4257
+#     components: [fastled]
+#     refresh: always
 
 light:
   - platform: neopixelbus
@@ -36,7 +36,20 @@ light:
   #   num_leds: 19
   #   rgb_order: BRG
   #   name: "LED Strip White CCT 1"
-        
+
+switch:
+  - platform: restart
+    name: "Restart Node"
+
+sensor:
+  - platform: wifi_signal
+    name: "Wifi Signal"
+    update_interval: 60s
+    icon: mdi:wifi
+  - platform: uptime
+    name: "Uptime"
+    update_interval: 60s
+    icon: mdi:clock-outline
     
 # Enable Home Assistant API
 api:
