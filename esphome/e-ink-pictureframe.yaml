@@ -81,7 +81,7 @@ script:
             - deep_sleep.enter: deepSleepComponent 
 
 i2c:
-  scan: False
+  scan: true
   id: bus_a  
   sda: GPIO21
   scl: GPIO22
@@ -111,8 +111,10 @@ sensor:
 
   - platform: uptime
     name: "Uptime"
-    update_interval: 60s
+    update_interval: 5s
     icon: mdi:clock-outline
+    filters:
+      - heartbeat: 10s
 
   - platform: adc
     id: batteryVoltageSensor
@@ -230,21 +232,23 @@ sensor:
       - lambda: return round(x);
 
     # local esp sensor
-  - platform: bme280
+  - platform: bme680
     i2c_id: bus_a  
-    address: 0x76
+    address: 0x77
     temperature:
-      name: "BME280 Temperature"
+      name: "Temperature"
       id: internalTemp
       accuracy_decimals: 1
       oversampling: 16x
     pressure:
-      name: "BME280 Pressure"
+      name: "Pressure"
       accuracy_decimals: 1
     humidity:
-      name: "BME280 Humidity"
+      name: "Humidity"
       id: internalHumidity
       accuracy_decimals: 1
+    gas_resistance:
+      name: "Gas Resistance"
     update_interval: 5s  
 
 text_sensor:
@@ -399,7 +403,8 @@ time:
 display:
   - platform: waveshare_epaper
     id: displayComponent
-    model: 7.50in-bV3
+    # model: 7.50in-bV3
+    model: 7.50in-bv2
     #pins
     busy_pin: 
       number: GPIO25
