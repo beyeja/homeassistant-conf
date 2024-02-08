@@ -102,7 +102,15 @@ binary_sensor:
       # then:
       #   - deep_sleep.prevent: deepSleepComponent
       #   - deep_sleep.allow: deepSleepComponent
-    
+
+bme680_bsec:
+   iaq_mode: STATIC
+   address: 0x77
+   i2c_id: bus_a
+   sample_rate: LP
+   state_save_interval: 
+     minutes: 1 
+
 sensor:
   - platform: wifi_signal
     name: "WiFi Signal"
@@ -111,10 +119,10 @@ sensor:
 
   - platform: uptime
     name: "Uptime"
-    update_interval: 5s
+    update_interval: 1s
     icon: mdi:clock-outline
     filters:
-      - heartbeat: 10s
+      - heartbeat: 2s
 
   - platform: adc
     id: batteryVoltageSensor
@@ -122,7 +130,7 @@ sensor:
     attenuation: 11db
     name: "Battery Voltage"
     device_class: voltage
-    update_interval: 250s
+    update_interval: 250ms
     filters: 
       - multiply: 2
       - median:
@@ -232,26 +240,90 @@ sensor:
       - lambda: return round(x);
 
     # local esp sensor
-  - platform: bme680
-    i2c_id: bus_a  
-    address: 0x77
+  - platform: bme680_bsec
+    # i2c_id: bus_a  
+    # address: 0x77
     temperature:
       name: "Temperature"
       id: internalTemp
       accuracy_decimals: 1
-      oversampling: 16x
+      sample_rate: lp
+      filters:
+        - median
     pressure:
       name: "Pressure"
       accuracy_decimals: 1
+      sample_rate: lp
+      filters:
+        - median
     humidity:
       name: "Humidity"
       id: internalHumidity
       accuracy_decimals: 1
+      sample_rate: lp
+      filters:
+        - median
     gas_resistance:
+      id: internalGasRestistance
       name: "Gas Resistance"
-    update_interval: 5s  
+      filters:
+        - median
+    iaq :
+      id: internalAirQuality
+      name: "Air Quality"
+      filters:
+        - median
+    co2_equivalent:
+      # CO2 equivalent estimate in ppm
+      name: "CO2 Equivalent"
+      filters:
+        - median
+    breath_voc_equivalent:
+      # Volatile organic compounds equivalent estimate in ppm
+      name: "Breath VOC Equivalent"
+      filters:
+        - median
+    # update_interval: 1s  
+
+  # - platform: template
+  #   update_interval: 1s
+  #   name: "Air Quality"
+  #   id: internalAirQuality
+  #   icon: "mdi:gauge"
+  #   unit_of_measurement: aq
+  #   # caulculation: comp_gas = log(R_gas[ohm]) + 0.04 log(Ohm)/%rh * hum[%rh]
+  #   lambda: |-
+  #     return log(id(internalGasRestistance).state) + 0.04 *  id(internalHumidity).state;
 
 text_sensor:
+  - platform: bme680_bsec
+    iaq_accuracy:
+      name: "IAQ Accuracy"
+
+  - platform: template
+    name: "Air Quality Classification"
+    id: internalAirQualityClassification
+    icon: "mdi:checkbox-marked-circle-outline"
+    update_interval: 1s
+    lambda: |-
+      if (int(id(internalAirQuality).state) <= 50) {
+        return {"Excellent"};
+      } else if (int(id(internalAirQuality).state) <= 100) {
+        return {"Good"};
+      } else if (int(id(internalAirQuality).state) <= 150) {
+        return {"Lightly polluted"};
+      } else if (int(id(internalAirQuality).state) <= 200) {
+        return {"Moderately polluted"};
+      } else if (int(id(internalAirQuality).state) <= 250) {
+        return {"Heavily polluted"};
+      } else if (int(id(internalAirQuality).state) <= 350) {
+        return {"Severely polluted"};
+      } else if (int(id(internalAirQuality).state) <= 500) {
+        return {"Extremely polluted"};
+      } else {
+        return {"unknown"};
+      }
+  
   - platform: homeassistant
     id: weatherCondition
     entity_id: sensor.esphome_weather_forecast
@@ -461,17 +533,16 @@ display:
       it.line(q2X, q1Y + 5, q2X, q1Y + qH - 5);
       
       // temps rooms
-      roomInfo(q1X + 10, q1Y, 
-              "Wohnzimmer", NULL, NULL, id(internalTemp), id(internalHumidity), 
+      roomInfo(q1X + 10, q1Y, "Wohnzimmer", 
+              NULL, NULL, id(internalTemp), id(internalHumidity), id(internalAirQuality),
               id(icnHumidity), it, id(roundedFont), id(robotoFontMed));
-      roomInfo(q2X + 10, q1Y, 
-              "Balkon", id(tempBalcony), NULL, NULL, NULL,
+      roomInfo(q2X + 10, q1Y, "Balkon", id(tempBalcony), NULL, NULL, NULL, NULL,
               id(icnHumidity), it, id(roundedFont), id(robotoFontMed));
-      roomInfo(q1X + 10, q2Y + 10, 
-              "Bad", id(tempBathroom), NULL, NULL, NULL,
+      roomInfo(q1X + 10, q2Y + 10, "Bad",
+              id(tempBathroom), NULL, NULL, NULL, NULL,
               id(icnHumidity), it, id(roundedFont), id(robotoFontMed));
-      roomInfo(q2X + 10, q2Y + 10, 
-              "Schlafzimmer", id(tempBedroom), id(humidBedroom), NULL, NULL, 
+      roomInfo(q2X + 10, q2Y + 10, "Schlafzimmer",
+              id(tempBedroom), id(humidBedroom), NULL, NULL, NULL,
               id(icnHumidity), it, id(roundedFont), id(robotoFontMed));
       
       // plants

@@ -124,12 +124,12 @@ void roomInfo(int x, int y, char *room,
               esphome::homeassistant::HomeassistantSensor *tempSensor,
               esphome::homeassistant::HomeassistantSensor *humidSensor,
               esphome::sensor::Sensor *internalTempSensor, 
-              esphome::sensor::Sensor *internalHumidSensor, 
+              esphome::sensor::Sensor *internalHumidSensor,
+              esphome::sensor::Sensor *internalAirSensor,
               esphome::image::Image *icnHumidity, display::Display &it,
               esphome::font::Font *headerFont, esphome::font::Font *dataFont) {
   int lineHeight = dataFont->get_height() + 1;
   int headerHeight = headerFont->get_height() + 1;
-
 
   it.printf(x, y, headerFont, "%s", room);
   if (tempSensor != NULL) {
@@ -145,6 +145,12 @@ void roomInfo(int x, int y, char *room,
   } else if (internalHumidSensor != NULL) {
     it.image(x + 110, y + headerHeight + lineHeight / 2, icnHumidity, ImageAlign::CENTER_LEFT);
     it.printf(x + 110 + icnHumidity->get_width(), y + headerHeight, dataFont, "%.1f %%", internalHumidSensor->state);
+  }
+
+  // air
+  if (internalAirSensor != NULL) {
+    // it.image(x, y + headerHeight + lineHeight, icnHumidity, ImageAlign::CENTER_LEFT);
+    it.printf(x, y + headerHeight + lineHeight, dataFont, "%.1f Qual", internalAirSensor->state);
   }
 }
 
