@@ -5,41 +5,57 @@ template:
         state: '{{ as_timestamp(states.sun.sun.attributes.next_setting) | timestamp_custom("%H:%M") }}'
       - name: "ESPHome: Next Sunrise as String"
         state: '{{ as_timestamp(states.sun.sun.attributes.next_rising) | timestamp_custom("%H:%M") }}'
+
+  - trigger:
+      - platform: time_pattern
+        minutes: /1 # every 1 minute
+    action:
+      - service: weather.get_forecasts
+        data:
+          type: daily
+        target:
+          entity_id: weather.jan_home
+        response_variable: daily
+    sensor:
       - name: "ESPHome: Forecast Today condition"
-        state: '{{ state_attr("weather.jan_home", "forecast")[0].condition }}'
+        unique_id: esphome_forecast_today_condition
+        state: '{{ daily["weather.jan_home"].forecast[0].condition }}'
       - name: "ESPHome: Forecast Today temperature"
-        state: '{{ state_attr("weather.jan_home", "forecast")[0].temperature  | round(0) }}'
-      - name: "ESPHome: Weather Forecast"
-        state: '{{ state_attr("weather.jan_home", "forecast")[0].condition }}'
+        unique_id: esphome_forecast_today_temperature
+        state: '{{ daily["weather.jan_home"].forecast[0].temperature  | round(0) }}'
+        unit_of_measurement: °C
+      - name: "ESPHome: Forecast Weather"
+        unique_id: esphome_forecast_weather
+        state: "{{ daily['weather.jan_home'].forecast[0].condition }}"
         attributes:
-          condition: '{{ state_attr("weather.jan_home", "forecast")[0].condition }}'
-          precipitation_probability: '{{ state_attr("weather.jan_home", "forecast")[0].precipitation_probability }}'
-          datetime: '{{ state_attr("weather.jan_home", "forecast")[0].datetime }}'
-          wind_bearing: '{{ state_attr("weather.jan_home", "forecast")[0].wind_bearing }}'
-          temperature: '{{ state_attr("weather.jan_home", "forecast")[0].temperature }}'
-          templow: '{{ state_attr("weather.jan_home", "forecast")[0].templow }}'
-          wind_gust_speed: '{{ state_attr("weather.jan_home", "forecast")[0].wind_gust_speed }}'
-          wind_speed: '{{ state_attr("weather.jan_home", "forecast")[0].wind_speed }}'
-          precipitation: '{{ state_attr("weather.jan_home", "forecast")[0].precipitation }}'
-          humidity: '{{ state_attr("weather.jan_home", "forecast")[0].humidity }}'
-          day_1_condition: '{{ state_attr("weather.jan_home", "forecast")[1].condition }}'
-          day_1_precipitation_probability: '{{ state_attr("weather.jan_home", "forecast")[1].precipitation_probability }}'
-          day_1_datetime: '{{ state_attr("weather.jan_home", "forecast")[1].datetime }}'
-          day_1_wind_bearing: '{{ state_attr("weather.jan_home", "forecast")[1].wind_bearing }}'
-          day_1_temperature: '{{ state_attr("weather.jan_home", "forecast")[1].temperature }}'
-          day_1_templow: '{{ state_attr("weather.jan_home", "forecast")[1].templow }}'
-          day_1_wind_gust_speed: '{{ state_attr("weather.jan_home", "forecast")[1].wind_gust_speed }}'
-          day_1_wind_speed: '{{ state_attr("weather.jan_home", "forecast")[1].wind_speed }}'
-          day_1_precipitation: '{{ state_attr("weather.jan_home", "forecast")[1].precipitation }}'
-          day_1_humidity: '{{ state_attr("weather.jan_home", "forecast")[1].humidity }}'
-          day_2_condition: '{{ state_attr("weather.jan_home", "forecast")[2].condition }}'
-          day_2_precipitation_probability: '{{ state_attr("weather.jan_home", "forecast")[2].precipitation_probability }}'
-          day_2_datetime: '{{ state_attr("weather.jan_home", "forecast")[2].datetime }}'
-          day_2_wind_bearing: '{{ state_attr("weather.jan_home", "forecast")[2].wind_bearing }}'
-          day_2_temperature: '{{ state_attr("weather.jan_home", "forecast")[2].temperature }}'
-          day_2_templow: '{{ state_attr("weather.jan_home", "forecast")[2].templow }}'
-          day_2_wind_gust_speed: '{{ state_attr("weather.jan_home", "forecast")[2].wind_gust_speed }}'
-          day_2_wind_speed: '{{ state_attr("weather.jan_home", "forecast")[2].wind_speed }}'
-          day_2_precipitation: '{{ state_attr("weather.jan_home", "forecast")[2].precipitation }}'
-          day_2_humidity: '{{ state_attr("weather.jan_home", "forecast")[2].humidity }}'
+          condition: '{{ daily["weather.jan_home"].forecast[0].condition }}'
+          precipitation_probability: '{{ daily["weather.jan_home"].forecast[0].precipitation_probability }}'
+          datetime: '{{ daily["weather.jan_home"].forecast[0].datetime }}'
+          wind_bearing: '{{ daily["weather.jan_home"].forecast[0].wind_bearing }}'
+          temperature: '{{ daily["weather.jan_home"].forecast[0].temperature }}'
+          templow: '{{ daily["weather.jan_home"].forecast[0].templow }}'
+          wind_gust_speed: '{{ daily["weather.jan_home"].forecast[0].wind_gust_speed }}'
+          wind_speed: '{{ daily["weather.jan_home"].forecast[0].wind_speed }}'
+          precipitation: '{{ daily["weather.jan_home"].forecast[0].precipitation }}'
+          humidity: '{{ daily["weather.jan_home"].forecast[0].humidity }}'
+          day_1_condition: '{{ daily["weather.jan_home"].forecast[1].condition }}'
+          day_1_precipitation_probability: '{{ daily["weather.jan_home"].forecast[1].precipitation_probability }}'
+          day_1_datetime: '{{ daily["weather.jan_home"].forecast[1].datetime }}'
+          day_1_wind_bearing: '{{ daily["weather.jan_home"].forecast[1].wind_bearing }}'
+          day_1_temperature: '{{ daily["weather.jan_home"].forecast[1].temperature }}'
+          day_1_templow: '{{ daily["weather.jan_home"].forecast[1].templow }}'
+          day_1_wind_gust_speed: '{{ daily["weather.jan_home"].forecast[1].wind_gust_speed }}'
+          day_1_wind_speed: '{{ daily["weather.jan_home"].forecast[1].wind_speed }}'
+          day_1_precipitation: '{{ daily["weather.jan_home"].forecast[1].precipitation }}'
+          day_1_humidity: '{{ daily["weather.jan_home"].forecast[1].humidity }}'
+          day_2_condition: '{{ daily["weather.jan_home"].forecast[2].condition }}'
+          day_2_precipitation_probability: '{{ daily["weather.jan_home"].forecast[2].precipitation_probability }}'
+          day_2_datetime: '{{ daily["weather.jan_home"].forecast[2].datetime }}'
+          day_2_wind_bearing: '{{ daily["weather.jan_home"].forecast[2].wind_bearing }}'
+          day_2_temperature: '{{ daily["weather.jan_home"].forecast[2].temperature }}'
+          day_2_templow: '{{ daily["weather.jan_home"].forecast[2].templow }}'
+          day_2_wind_gust_speed: '{{ daily["weather.jan_home"].forecast[2].wind_gust_speed }}'
+          day_2_wind_speed: '{{ daily["weather.jan_home"].forecast[2].wind_speed }}'
+          day_2_precipitation: '{{ daily["weather.jan_home"].forecast[2].precipitation }}'
+          day_2_humidity: '{{ daily["weather.jan_home"].forecast[2].humidity }}'
 
