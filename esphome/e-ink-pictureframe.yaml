@@ -69,15 +69,14 @@ script:
   - id: scriptConsiderSleep
     mode: queued
     then:
-      - lambda: |-
-          ESP_LOGD("scriptConsiderSleep", "considering going to sleep in 1 seconds...");
-      - delay: 1s
       - if:
           condition:
             binary_sensor.is_on: noSleepMode
           then:
-            - logger.log: 'Skipping sleep, per prevent_deep_sleep'
+            - logger.log: 'Consider Going to sleep: avoided by "prevent_deep_sleep"'
           else:
+            - logger.log: 'Consider Going to sleep, ...sleeping in a second'
+            - delay: 1s
             - deep_sleep.enter: deepSleepComponent 
 
 i2c:
@@ -103,14 +102,6 @@ binary_sensor:
       #   - deep_sleep.prevent: deepSleepComponent
       #   - deep_sleep.allow: deepSleepComponent
 
-bme680_bsec:
-   iaq_mode: STATIC
-   address: 0x77
-   i2c_id: bus_a
-   sample_rate: LP
-   state_save_interval: 
-     minutes: 1 
-
 sensor:
   - platform: wifi_signal
     name: "WiFi Signal"
@@ -130,12 +121,12 @@ sensor:
     attenuation: 11db
     name: "Battery Voltage"
     device_class: voltage
-    update_interval: 250ms
+    update_interval: 500ms
     filters: 
       - multiply: 2
       - median:
-          window_size: 6
-          send_every: 4
+          window_size: 5
+          send_first_at: 2
    
   - platform: template
     name: "Battery Level"
@@ -190,7 +181,7 @@ sensor:
     # weather infos
   - platform: homeassistant
     id: temp
-    entity_id: sensor.esphome_weather_forecast
+    entity_id: sensor.esphome_forecast_weather
     attribute: temperature
     internal: true
     filters: 
@@ -201,143 +192,75 @@ sensor:
         - lambda: |-
             ESP_LOGD("main", "Main value temp sensor (%.1f) updated updating --> screen....", x);
         - component.update: displayComponent
-        - delay: 1s
         - script.execute: scriptConsiderSleep
   - platform: homeassistant
     id: rainProbab
-    entity_id: sensor.esphome_weather_forecast
+    entity_id: sensor.esphome_forecast_weather
     attribute: precipitation_probability
     internal: true
     filters: 
       - lambda: return round(x);
   - platform: homeassistant
     id: tempDay1
-    entity_id: sensor.esphome_weather_forecast
+    entity_id: sensor.esphome_forecast_weather
     attribute: day_1_temperature
     internal: true
     filters: 
       - lambda: return round(x);
   - platform: homeassistant
     id: rainProbabDay1
-    entity_id: sensor.esphome_weather_forecast
+    entity_id: sensor.esphome_forecast_weather
     attribute: day_1_precipitation_probability
     internal: true
     filters: 
       - lambda: return round(x);
   - platform: homeassistant
     id: tempDay2
-    entity_id: sensor.esphome_weather_forecast
+    entity_id: sensor.esphome_forecast_weather
     attribute: day_2_temperature
     internal: true
     filters: 
       - lambda: return round(x);
   - platform: homeassistant
     id: rainProbabDay2
-    entity_id: sensor.esphome_weather_forecast
+    entity_id: sensor.esphome_forecast_weather
     attribute: day_2_precipitation_probability
     internal: true
     filters: 
       - lambda: return round(x);
 
     # local esp sensor
-  - platform: bme680_bsec
-    # i2c_id: bus_a  
-    # address: 0x77
+  - platform: bme280_i2c
+    i2c_id: bus_a  
+    address: 0x76
+    update_interval: 1s  
     temperature:
       name: "Temperature"
       id: internalTemp
       accuracy_decimals: 1
-      sample_rate: lp
-      filters:
-        - median
     pressure:
       name: "Pressure"
       accuracy_decimals: 1
-      sample_rate: lp
-      filters:
-        - median
     humidity:
       name: "Humidity"
       id: internalHumidity
       accuracy_decimals: 1
-      sample_rate: lp
-      filters:
-        - median
-    gas_resistance:
-      id: internalGasRestistance
-      name: "Gas Resistance"
-      filters:
-        - median
-    iaq :
-      id: internalAirQuality
-      name: "Air Quality"
-      filters:
-        - median
-    co2_equivalent:
-      # CO2 equivalent estimate in ppm
-      name: "CO2 Equivalent"
-      filters:
-        - median
-    breath_voc_equivalent:
-      # Volatile organic compounds equivalent estimate in ppm
-      name: "Breath VOC Equivalent"
-      filters:
-        - median
-    # update_interval: 1s  
-
-  # - platform: template
-  #   update_interval: 1s
-  #   name: "Air Quality"
-  #   id: internalAirQuality
-  #   icon: "mdi:gauge"
-  #   unit_of_measurement: aq
-  #   # caulculation: comp_gas = log(R_gas[ohm]) + 0.04 log(Ohm)/%rh * hum[%rh]
-  #   lambda: |-
-  #     return log(id(internalGasRestistance).state) + 0.04 *  id(internalHumidity).state;
 
 text_sensor:
-  - platform: bme680_bsec
-    iaq_accuracy:
-      name: "IAQ Accuracy"
-
-  - platform: template
-    name: "Air Quality Classification"
-    id: internalAirQualityClassification
-    icon: "mdi:checkbox-marked-circle-outline"
-    update_interval: 1s
-    lambda: |-
-      if (int(id(internalAirQuality).state) <= 50) {
-        return {"Excellent"};
-      } else if (int(id(internalAirQuality).state) <= 100) {
-        return {"Good"};
-      } else if (int(id(internalAirQuality).state) <= 150) {
-        return {"Lightly polluted"};
-      } else if (int(id(internalAirQuality).state) <= 200) {
-        return {"Moderately polluted"};
-      } else if (int(id(internalAirQuality).state) <= 250) {
-        return {"Heavily polluted"};
-      } else if (int(id(internalAirQuality).state) <= 350) {
-        return {"Severely polluted"};
-      } else if (int(id(internalAirQuality).state) <= 500) {
-        return {"Extremely polluted"};
-      } else {
-        return {"unknown"};
-      }
-  
   - platform: homeassistant
     id: weatherCondition
-    entity_id: sensor.esphome_weather_forecast
+    entity_id: sensor.esphome_forecast_weather
     attribute: condition
     internal: true
     filters: 
   - platform: homeassistant
     id: weatherConditionDay1
-    entity_id: sensor.esphome_weather_forecast
+    entity_id: sensor.esphome_forecast_weather
     attribute: day_1_condition
     internal: true
   - platform: homeassistant
     id: weatherConditionDay2
-    entity_id: sensor.esphome_weather_forecast
+    entity_id: sensor.esphome_forecast_weather
     attribute: day_2_condition
     internal: true
 
@@ -506,6 +429,8 @@ display:
       it.strftime(sX + 0, sY + 742, id(microSix), "%Y.%m:%d %H:%M", id(esptime).now());
       it.printf(sX + 100, sY + 742, id(microSix), "%.0f %%", id(batteryLevel).state);
       it.printf(sX + 130, sY + 742, id(microSix), "%.2f V", id(batteryVoltageSensor).state);
+      // it.printf(sX + 0, sY + 742 - 9, id(microSix), "%.0f iaq", id(internalAirQuality).state);
+      // it.printf(sX + 50, sY + 742 - 9, id(microSix), "%s", id(internalIAQAccuracy).state.c_str());
 
       // weather forecast today
       forecast(sX + 35, sY, forecastIcon(id(weatherCondition).state, true), 
@@ -534,7 +459,7 @@ display:
       
       // temps rooms
       roomInfo(q1X + 10, q1Y, "Wohnzimmer", 
-              NULL, NULL, id(internalTemp), id(internalHumidity), id(internalAirQuality),
+              NULL, NULL, id(internalTemp), id(internalHumidity), NULL,
               id(icnHumidity), it, id(roundedFont), id(robotoFontMed));
       roomInfo(q2X + 10, q1Y, "Balkon", id(tempBalcony), NULL, NULL, NULL, NULL,
               id(icnHumidity), it, id(roundedFont), id(robotoFontMed));
