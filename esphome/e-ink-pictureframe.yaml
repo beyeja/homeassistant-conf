@@ -22,6 +22,7 @@ api:
     key: !secret enc_default
 
 ota:
+  platform: esphome
   # password: !secret ota_password
   password: "c00cddd74f52489c53801e26986d06ad"
 
