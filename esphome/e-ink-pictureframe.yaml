@@ -3,7 +3,7 @@ esphome:
   friendly_name: E-Ink Pictureframe
 
   includes:
-    - functions/helpers.h
+    - functions/e-ink-helpers.h
 
   # on_loop:
   #   then:
@@ -29,11 +29,7 @@ ota:
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
-  # on_connect:
-  #   then:
-  #     - lambda: id(builtInLEDPin).write_state(false);
-  #     - delay: 250ms
-  #     - lambda: id(builtInLEDPin).write_state(true);
+  # fast_connect: true # test this to save some power
 
   # Enable fallback hotspot (captive portal) in case wifi connection fails
   ap:
@@ -119,7 +115,7 @@ sensor:
   - platform: adc
     id: batteryVoltageSensor
     pin: 34
-    attenuation: 11db
+    attenuation: 12db
     name: "Battery Voltage"
     device_class: voltage
     update_interval: 500ms
@@ -181,7 +177,7 @@ sensor:
 
     # weather infos
   - platform: homeassistant
-    id: temp
+    id: tempToday
     entity_id: sensor.esphome_forecast_weather
     attribute: temperature
     internal: true
@@ -195,7 +191,12 @@ sensor:
         - component.update: displayComponent
         - script.execute: scriptConsiderSleep
   - platform: homeassistant
-    id: rainProbab
+    id: tempCurrent
+    entity_id: weather.jan_home
+    attribute: temperature
+    internal: true
+  - platform: homeassistant
+    id: rainProbabToday
     entity_id: sensor.esphome_forecast_weather
     attribute: precipitation_probability
     internal: true
@@ -295,6 +296,7 @@ font:
   - file: "gfonts://Roboto@700"
     id: robotoFontLarge
     size: 40
+    glyphs: '>›!"%()+=,-_.:°/?0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz'
 
 image:
   - file: mdi:solar-panel-large
@@ -435,13 +437,13 @@ display:
 
       // weather forecast today
       forecast(sX + 35, sY, forecastIcon(id(weatherCondition).state, true), 
-              id(icnRainProbability), temp, rainProbab, it, id(robotoFontLarge));
+              id(icnRainProbability), tempToday, rainProbabToday, it, id(robotoFontLarge), tempCurrent);
       // weather forecast tomorrow
       forecast(sX + 325, sY, forecastIcon(id(weatherConditionDay1).state, false), 
-              id(icnRainProbability), tempDay1, rainProbabDay1, it, id(robotoFontMed));
+              id(icnRainProbability), tempDay1, rainProbabDay1, it, id(robotoFontMed), NULL);
       // weather forecast day after tomorrow
       forecast(sX + 325, sY + 155, forecastIcon(id(weatherConditionDay2).state, false), 
-              id(icnRainProbability), tempDay2, rainProbabDay2, it, id(robotoFontMed));
+              id(icnRainProbability), tempDay2, rainProbabDay2, it, id(robotoFontMed), NULL);
 
       // sunrise
       sunSetRise(sX + 15, sY + 285, id(icnSunRise), id(nextSunRiseString), it, id(robotoFontSmall));

@@ -26,27 +26,21 @@ void layoutLines(display::Display &it, int sX, int sY, int w, int h) {
 
 // map forecast to icon
 esphome::image::Image *forecastIcon(std::__cxx11::string forecastVal, bool xl) {
-  if (forecastVal == "sunny" 
-  || forecastVal == "clear-day") {
+  if (forecastVal == "sunny" || forecastVal == "clear-day") {
     return &id(xl ? icnSunnyXL : icnSunnyMD);
   } else if (forecastVal == "clear-night") {
     return &id(xl ? icnClearNightXL : icnClearNightMD);
   } else if (forecastVal == "cloudy") {
     return &id(xl ? icnCloudyXL : icnCloudyMD);
-  } else if (forecastVal == "rainy" 
-          || forecastVal == "lightning" 
-          || forecastVal == "lightning-rainy" 
-          || forecastVal == "hail" 
-          || forecastVal == "pouring"
-          || forecastVal == "exceptional") {
+  } else if (forecastVal == "rainy" || forecastVal == "lightning" ||
+             forecastVal == "lightning-rainy" || forecastVal == "hail" ||
+             forecastVal == "pouring" || forecastVal == "exceptional") {
     return &id(xl ? icnRainyXL : icnRainyMD);
   } else if (forecastVal == "sleet") {
     return &id(xl ? icnSleetXL : icnSleetMD);
-  } else if (forecastVal == "snowy" 
-          || forecastVal == "snowy-rainy") {
+  } else if (forecastVal == "snowy" || forecastVal == "snowy-rainy") {
     return &id(xl ? icnSnowXL : icnSnowMD);
-  } else if (forecastVal == "windy" 
-          || forecastVal == "windy-variant") {
+  } else if (forecastVal == "windy" || forecastVal == "windy-variant") {
     return &id(xl ? icnWindXL : icnWindMD);
   } else if (forecastVal == "fog") {
     return &id(xl ? icnFogXL : icnFogMD);
@@ -61,7 +55,8 @@ void forecast(int x, int y, esphome::image::Image *icnFc,
               esphome::image::Image *icnRain,
               esphome::homeassistant::HomeassistantSensor *temp,
               esphome::homeassistant::HomeassistantSensor *rain,
-              display::Display &it, esphome::font::Font *font) {
+              display::Display &it, esphome::font::Font *font,
+              esphome::homeassistant::HomeassistantSensor *currentTemp) {
   // weather condition
   it.image(x, y, icnFc);
 
@@ -70,8 +65,14 @@ void forecast(int x, int y, esphome::image::Image *icnFc,
   int icnFcHeight = icnFc->get_height() * .95;
 
   // temp
-  it.printf(x + icnFc->get_width() / 2, y + icnFcHeight, font,
-            TextAlign::TOP_CENTER, "%.0f °C", temp->state);
+  if (currentTemp != NULL) {
+    it.printf(x + icnFc->get_width() / 2, y + icnFcHeight, font,
+              TextAlign::TOP_CENTER, "%.0f -> %.0f °C", currentTemp->state,
+              temp->state);
+  } else {
+    it.printf(x + icnFc->get_width() / 2, y + icnFcHeight, font,
+              TextAlign::TOP_CENTER, "%.0f °C", temp->state);
+  }
   // rain probability
   it.image((x + icnFc->get_width() / 2) - lineHeight * .75,
            y + 2 + icnFcHeight + lineHeight + fontHeight / 2, icnRain,
@@ -108,7 +109,7 @@ void plant(int x, int y, float val, esphome::image::Image *icn,
   // render tick-marks
   int tickInterval = 20;
   int tickLn = 10;
-  for(int i = tickInterval; i < progressH; i += tickInterval) {
+  for (int i = tickInterval; i < progressH; i += tickInterval) {
     if (i >= progressH - fillHeight)
       it.line(barX + 2, barY + i, barX + tickLn, barY + i, COLOR_OFF);
     else
@@ -123,7 +124,7 @@ void plant(int x, int y, float val, esphome::image::Image *icn,
 void roomInfo(int x, int y, char *room,
               esphome::homeassistant::HomeassistantSensor *tempSensor,
               esphome::homeassistant::HomeassistantSensor *humidSensor,
-              esphome::sensor::Sensor *internalTempSensor, 
+              esphome::sensor::Sensor *internalTempSensor,
               esphome::sensor::Sensor *internalHumidSensor,
               esphome::text_sensor::TextSensor *airSensor,
               esphome::image::Image *icnHumidity, display::Display &it,
@@ -135,21 +136,27 @@ void roomInfo(int x, int y, char *room,
   if (tempSensor != NULL) {
     it.printf(x, y + headerHeight, dataFont, "%.1f °C", tempSensor->state);
   } else if (internalTempSensor != NULL) {
-    it.printf(x, y + headerHeight, dataFont, "%.1f °C", internalTempSensor->state);
+    it.printf(x, y + headerHeight, dataFont, "%.1f °C",
+              internalTempSensor->state);
   }
 
   // humidity
   if (humidSensor != NULL) {
-    it.image(x + 110, y + headerHeight + lineHeight / 2, icnHumidity, ImageAlign::CENTER_LEFT);
-    it.printf(x + 110 + icnHumidity->get_width(), y + headerHeight, dataFont, "%.1f %%", humidSensor->state);
+    it.image(x + 110, y + headerHeight + lineHeight / 2, icnHumidity,
+             ImageAlign::CENTER_LEFT);
+    it.printf(x + 110 + icnHumidity->get_width(), y + headerHeight, dataFont,
+              "%.1f %%", humidSensor->state);
   } else if (internalHumidSensor != NULL) {
-    it.image(x + 110, y + headerHeight + lineHeight / 2, icnHumidity, ImageAlign::CENTER_LEFT);
-    it.printf(x + 110 + icnHumidity->get_width(), y + headerHeight, dataFont, "%.1f %%", internalHumidSensor->state);
+    it.image(x + 110, y + headerHeight + lineHeight / 2, icnHumidity,
+             ImageAlign::CENTER_LEFT);
+    it.printf(x + 110 + icnHumidity->get_width(), y + headerHeight, dataFont,
+              "%.1f %%", internalHumidSensor->state);
   }
 
   // air
   if (airSensor != NULL) {
-    it.printf(x, y + headerHeight + lineHeight, dataFont, "%s", airSensor->get_state().c_str());
+    it.printf(x, y + headerHeight + lineHeight, dataFont, "%s",
+              airSensor->get_state().c_str());
   }
 }
 
