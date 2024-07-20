@@ -11,6 +11,7 @@ logger:
 # Enable Home Assistant API
 api:
   encryption:
+    key: !secret enc_default
 
 ota:
   platform: esphome
@@ -21,7 +22,7 @@ wifi:
   password: !secret wifi_password
 
   # manual ip as this esp device has issues with asus smart-connect feature
-  manual_ip: 
+  manual_ip:
     static_ip: 192.168.2.167
     gateway: 192.168.2.1
     subnet: 255.255.255.0
@@ -32,4 +33,3 @@ wifi:
     password: !secret wifi_ap_password
 
 captive_portal:
-    

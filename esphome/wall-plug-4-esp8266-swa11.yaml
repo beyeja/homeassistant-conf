@@ -1,7 +1,7 @@
 esphome:
   name: wall-plug-4-esp8266-swa11
   friendly_name: Wall Plug 4 ESP8266 SWA11
-  
+
 # include base config for all the same devices
 <<: !include component/wall-plug-base-config.yaml
 
@@ -11,6 +11,7 @@ logger:
 # Enable Home Assistant API
 api:
   encryption:
+    key: !secret enc_default
 
 ota:
   platform: esphome
@@ -24,12 +25,11 @@ wifi:
   ap:
     ssid: "Wall-Plug-4-Esp8266-Swa11"
     password: !secret wifi_ap_password
-    
+
   # manual ip as this esp device has issues with asus smart-connect feature
-  # manual_ip: 
+  # manual_ip:
   #   static_ip: 192.168.2.194
   #   gateway: 192.168.2.1
   #   subnet: 255.255.255.0
 
 captive_portal:
-    
