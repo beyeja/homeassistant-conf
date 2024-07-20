@@ -10,6 +10,7 @@ logger:
 # Enable Home Assistant API
 api:
   encryption:
+    key: !secret enc_default
 
 ota:
   platform: esphome
@@ -31,7 +32,7 @@ i2c:
 # Example configuration entry
 switch:
   - platform: gpio
-    pin: 
+    pin:
       number: D0
     name: "Ambient Sensor LED"
     id: "ambient_sensor_8266_led"
@@ -70,11 +71,10 @@ sensor:
       accuracy_decimals: 0
       filters:
         - or:
-            - delta: 50 
+            - delta: 50
             - throttle: 20sec
     glass_attenuation_factor: 2
     address: 0x29
     update_interval: 2s
 
 captive_portal:
-    
