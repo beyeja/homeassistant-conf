@@ -1,11 +1,12 @@
 esphome:
   name: e-ink-pictureframe
   friendly_name: E-Ink Pictureframe
+
   includes:
     - functions/helpers.h
-  
-  # on_loop: 
-  #   then: 
+
+  # on_loop:
+  #   then:
   #     - lambda: |-
   #         ESP_LOGD("DEBUG", "Looping");
 
@@ -23,8 +24,7 @@ api:
 
 ota:
   platform: esphome
-  # password: !secret ota_password
-  password: "c00cddd74f52489c53801e26986d06ad"
+  password: !secret ota_password
 
 wifi:
   ssid: !secret wifi_ssid
@@ -44,12 +44,12 @@ globals:
   - id: BATT_EMPTY_VOLT
     type: float
     restore_value: True
-    initial_value: '3'
-    
+    initial_value: "3"
+
   - id: BATT_MAX_VOLT
     type: float
     restore_value: True
-    initial_value: '4.2'
+    initial_value: "4.2"
 
 output:
   - platform: gpio
@@ -61,7 +61,7 @@ output:
     pin: GPIO2
     inverted: True
 
-deep_sleep: 
+deep_sleep:
   id: deepSleepComponent
   run_duration: 120s # this is the max awake time, proper sleep is inplemented in actions
   sleep_duration: 15min
@@ -76,13 +76,13 @@ script:
           then:
             - logger.log: 'Consider Going to sleep: avoided by "prevent_deep_sleep"'
           else:
-            - logger.log: 'Consider Going to sleep, ...sleeping in a second'
+            - logger.log: "Consider Going to sleep, ...sleeping in a second"
             - delay: 1s
-            - deep_sleep.enter: deepSleepComponent 
+            - deep_sleep.enter: deepSleepComponent
 
 i2c:
   scan: true
-  id: bus_a  
+  id: bus_a
   sda: GPIO21
   scl: GPIO22
 
@@ -90,7 +90,7 @@ spi:
   - id: spiBus0
     clk_pin: GPIO18 # SCK # when to read data
     mosi_pin: GPIO19 # aka SDO (serial data out - send data)
-    # miso_pin: # aka SDI (serial data in - receive data)  
+    # miso_pin: # aka SDI (serial data in - receive data)
 
 binary_sensor:
   # avoids sleep of esp for updates and dev
@@ -99,9 +99,9 @@ binary_sensor:
     entity_id: input_boolean.esp_no_sleep
     internal: true
     # on_state:
-      # then:
-      #   - deep_sleep.prevent: deepSleepComponent
-      #   - deep_sleep.allow: deepSleepComponent
+    # then:
+    #   - deep_sleep.prevent: deepSleepComponent
+    #   - deep_sleep.allow: deepSleepComponent
 
 sensor:
   - platform: wifi_signal
@@ -123,19 +123,19 @@ sensor:
     name: "Battery Voltage"
     device_class: voltage
     update_interval: 500ms
-    filters: 
+    filters:
       - multiply: 2
       - median:
           window_size: 5
           send_first_at: 2
-   
+
   - platform: template
     name: "Battery Level"
     id: batteryLevel
     device_class: battery
-    # filters: 
+    # filters:
     lambda: |-
-          return ((id(batteryVoltageSensor).state) - id(BATT_EMPTY_VOLT)) / (id(BATT_MAX_VOLT) - id(BATT_EMPTY_VOLT)) * 100;
+      return ((id(batteryVoltageSensor).state) - id(BATT_EMPTY_VOLT)) / (id(BATT_MAX_VOLT) - id(BATT_EMPTY_VOLT)) * 100;
     unit_of_measurement: "%"
     update_interval: 2s
 
@@ -178,17 +178,17 @@ sensor:
     id: tempBalcony
     entity_id: sensor.plant_sensor_0815_temperature
     internal: true
-    
+
     # weather infos
   - platform: homeassistant
     id: temp
     entity_id: sensor.esphome_forecast_weather
     attribute: temperature
     internal: true
-    filters: 
+    filters:
       - lambda: return round(x);
     # main temp sensor used for screen and sleep update event
-    on_value: 
+    on_value:
       then:
         - lambda: |-
             ESP_LOGD("main", "Main value temp sensor (%.1f) updated updating --> screen....", x);
@@ -199,42 +199,42 @@ sensor:
     entity_id: sensor.esphome_forecast_weather
     attribute: precipitation_probability
     internal: true
-    filters: 
+    filters:
       - lambda: return round(x);
   - platform: homeassistant
     id: tempDay1
     entity_id: sensor.esphome_forecast_weather
     attribute: day_1_temperature
     internal: true
-    filters: 
+    filters:
       - lambda: return round(x);
   - platform: homeassistant
     id: rainProbabDay1
     entity_id: sensor.esphome_forecast_weather
     attribute: day_1_precipitation_probability
     internal: true
-    filters: 
+    filters:
       - lambda: return round(x);
   - platform: homeassistant
     id: tempDay2
     entity_id: sensor.esphome_forecast_weather
     attribute: day_2_temperature
     internal: true
-    filters: 
+    filters:
       - lambda: return round(x);
   - platform: homeassistant
     id: rainProbabDay2
     entity_id: sensor.esphome_forecast_weather
     attribute: day_2_precipitation_probability
     internal: true
-    filters: 
+    filters:
       - lambda: return round(x);
 
     # local esp sensor
   - platform: bme280_i2c
-    i2c_id: bus_a  
+    i2c_id: bus_a
     address: 0x76
-    update_interval: 1s  
+    update_interval: 1s
     temperature:
       name: "Temperature"
       id: internalTemp
@@ -253,7 +253,7 @@ text_sensor:
     entity_id: sensor.esphome_forecast_weather
     attribute: condition
     internal: true
-    filters: 
+    filters:
   - platform: homeassistant
     id: weatherConditionDay1
     entity_id: sensor.esphome_forecast_weather
@@ -402,14 +402,14 @@ display:
     # model: 7.50in-bV3
     model: 7.50in-bv2
     #pins
-    busy_pin: 
+    busy_pin:
       number: GPIO25
       inverted: false
     reset_pin: GPIO1
     cs_pin: GPIO23 # chip select (SS) # when to listen for data
     dc_pin: GPIO3 # ?
     spi_id: spiBus0
-      
+
     update_interval: never # is done by state changes
     reset_duration: 2ms
     rotation: 270
@@ -442,12 +442,12 @@ display:
       // weather forecast day after tomorrow
       forecast(sX + 325, sY + 155, forecastIcon(id(weatherConditionDay2).state, false), 
               id(icnRainProbability), tempDay2, rainProbabDay2, it, id(robotoFontMed));
-      
+
       // sunrise
       sunSetRise(sX + 15, sY + 285, id(icnSunRise), id(nextSunRiseString), it, id(robotoFontSmall));
       // sunset
       sunSetRise(sX + 170, sY + 285, id(icnSunSet), id(nextSunSetString), it, id(robotoFontSmall));
-      
+
       int qH = 225, qY = sY + 330;   // height of whole grid, startY of grid
       int q1X = sX;             // grid col 1 start x 
       int q2X = (q2X + w) / 2;  // grid col 2 start x 
@@ -457,7 +457,7 @@ display:
       it.line(q1X + 10, q2Y, sX + w - 10, q2Y);
       // vertical
       it.line(q2X, q1Y + 5, q2X, q1Y + qH - 5);
-      
+
       // temps rooms
       roomInfo(q1X + 10, q1Y, "Wohnzimmer", 
               NULL, NULL, id(internalTemp), id(internalHumidity), NULL,
@@ -470,7 +470,7 @@ display:
       roomInfo(q2X + 10, q2Y + 10, "Schlafzimmer",
               id(tempBedroom), id(humidBedroom), NULL, NULL, NULL,
               id(icnHumidity), it, id(roundedFont), id(robotoFontMed));
-      
+
       // plants
       plant(sX + 240, sY + 590, 
           id(plant0060).has_state() ? id(plant0060).state : -1, 
