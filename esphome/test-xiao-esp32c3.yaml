@@ -51,6 +51,9 @@ wifi:
     ssid: "Test-Xiao-Esp32C3"
     password: !secret wifi_ap_password
 
+web_server:
+  port: 80 # Or your preferred port
+  
 deep_sleep:
   run_duration: 30s
   sleep_duration: 1h
@@ -145,4 +148,3 @@ sensor:
     update_interval: 500ms
 
 captive_portal:
-    
