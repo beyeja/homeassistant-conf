@@ -64,7 +64,7 @@ web_server:
 
 deep_sleep:
   id: idDeepSpleep
-  # run_duration: 10min
+  run_duration: 10min
   # sleep_duration: 1h
   wakeup_pin: GPIO2
   wakeup_pin_mode: INVERT_WAKEUP
