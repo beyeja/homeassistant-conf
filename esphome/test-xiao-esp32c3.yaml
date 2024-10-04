@@ -81,7 +81,7 @@ bme68x_bsec2_i2c:
   # operating_age: 28d
   # sample_rate: LP
   supply_voltage: 3.3V
-  temperature_offset: 4.2
+  temperature_offset: 3.9
   state_save_interval: 5min
 
 binary_sensor:
@@ -96,8 +96,8 @@ binary_sensor:
     name: "Button"
 
     on_click:
-      - min_length: 3s
-        max_length: 10s
+      - min_length: 2s
+        max_length: 5s
         then:
           - logger.log: "Button pressed for 2 seconds, going to sleep..."
           - deep_sleep.enter: idDeepSpleep
@@ -130,9 +130,11 @@ interval:
     then:
       - lambda: |-
           if (id(sensorButton).state 
-              && (millis() - id(buttonPressTimer) >= 3000) 
-              && (millis() - id(buttonPressTimer) >= 10000)) {
+              && (millis() - id(buttonPressTimer) >= 2000) 
+              && (millis() - id(buttonPressTimer) < 5000)) {
             id(buttonSignaledSleep) = true;
+          } else {
+            id(buttonSignaledSleep) = false;
           }
 
 # Example configuration entry
@@ -207,7 +209,8 @@ display:
 
           // show sleep press mode
           if (id(buttonSignaledSleep) == true) {
-            it.rectangle(0, 0, 128, 32);
+            it.print(63, 15, id(vcrMonoFont), TextAlign::CENTER, "Sleep...");
+            return;
           }
 
           // print temps
@@ -226,7 +229,8 @@ display:
 
           // show sleep press mode
           if (id(buttonSignaledSleep) == true) {
-            it.rectangle(0, 0, 128, 32);
+            it.print(63, 15, id(vcrMonoFont), TextAlign::CENTER, "Sleep...");
+            return;
           }
 
           // print everything related to air quality
