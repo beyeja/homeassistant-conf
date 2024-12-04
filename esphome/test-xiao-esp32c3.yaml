@@ -84,6 +84,10 @@ bme68x_bsec2_i2c:
   temperature_offset: 3.9
   state_save_interval: 5min
 
+switch:
+  - platform: restart
+    name: "Restart Device"
+
 binary_sensor:
   - platform: gpio
     id: sensorButton

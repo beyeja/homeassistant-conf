@@ -45,7 +45,7 @@ globals:
   - id: BATT_MAX_VOLT
     type: float
     restore_value: True
-    initial_value: "4.2"
+    initial_value: "4.0"
 
 output:
   - platform: gpio
@@ -60,7 +60,7 @@ output:
 deep_sleep:
   id: deepSleepComponent
   run_duration: 120s # this is the max awake time, proper sleep is inplemented in actions
-  sleep_duration: 15min
+  sleep_duration: 20min
 
 script:
   - id: scriptConsiderSleep
