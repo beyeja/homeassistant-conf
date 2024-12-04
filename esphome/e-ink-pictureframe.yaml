@@ -60,7 +60,7 @@ output:
 deep_sleep:
   id: deepSleepComponent
   run_duration: 120s # this is the max awake time, proper sleep is inplemented in actions
-  sleep_duration: 20min
+  sleep_duration: 60min
 
 script:
   - id: scriptConsiderSleep
