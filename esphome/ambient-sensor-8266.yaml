@@ -29,7 +29,6 @@ i2c:
   scan: true
   id: bus_a
 
-# Example configuration entry
 switch:
   - platform: gpio
     pin:

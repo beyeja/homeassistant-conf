@@ -306,93 +306,121 @@ image:
   - file: mdi:water-thermometer-outline
     id: icnThermostatXL
     resize: 30x30
+    type: BINARY
   - file: mdi:weather-sunset-down
     id: icnSunSet
     resize: 25x25
+    type: BINARY
   - file: mdi:weather-sunset-up
     id: icnSunRise
     resize: 25x25
+    type: BINARY
   - file: mdi:weather-pouring
     id: icnRainProbability
     resize: 30x30
+    type: BINARY
   - file: mdi:water-percent
     id: icnHumidity
     resize: 30x30
+    type: BINARY
 
   # forecast images large
   - file: mdi:weather-sunny
     id: icnSunnyXL
     resize: 200x200
+    type: BINARY
   - file: mdi:weather-night
     id: icnClearNightXL
     resize: 200x200
+    type: BINARY
   - file: mdi:weather-cloudy
     id: icnCloudyXL
     resize: 200x200
+    type: BINARY
   - file: mdi:weather-rainy
     id: icnRainyXL
     resize: 200x200
+    type: BINARY
   - file: mdi:weather-snowy-rainy
     id: icnSleetXL
     resize: 200x200
+    type: BINARY
   - file: mdi:weather-snowy
     id: icnSnowXL
     resize: 200x200
+    type: BINARY
   - file: mdi:weather-windy
     id: icnWindXL
     resize: 200x200
+    type: BINARY
   - file: mdi:weather-fog
     id: icnFogXL
     resize: 200x200
+    type: BINARY
   - file: mdi:weather-partly-cloudy
     id: icnPartlyCloudyXL
     resize: 200x200
+    type: BINARY
 
   # forecast images small
   - file: mdi:weather-sunny
     id: icnSunnyMD
     resize: 80x80
+    type: BINARY
   - file: mdi:weather-night
     id: icnClearNightMD
     resize: 80x80
+    type: BINARY
   - file: mdi:weather-cloudy
     id: icnCloudyMD
     resize: 80x80
+    type: BINARY
   - file: mdi:weather-rainy
     id: icnRainyMD
     resize: 80x80
+    type: BINARY
   - file: mdi:weather-snowy-rainy
     id: icnSleetMD
     resize: 80x80
+    type: BINARY
   - file: mdi:weather-snowy
     id: icnSnowMD
     resize: 80x80
+    type: BINARY
   - file: mdi:weather-windy
     id: icnWindMD
     resize: 80x80
+    type: BINARY
   - file: mdi:weather-fog
     id: icnFogMD
     resize: 80x80
+    type: BINARY
   - file: mdi:weather-partly-cloudy
     id: icnPartlyCloudyMD
     resize: 80x80
+    type: BINARY
 
     # plants
   - file: mdi:cactus
     id: icnCactus
     resize: 30x30
+    type: BINARY
   - file: mdi:fruit-pineapple
     id: icnPineapple
     resize: 30x30
+    type: BINARY
   - file: mdi:tree-outline
     id: icnTree
     resize: 30x30
+    type: BINARY
   - file: mdi:sprout-outline
     id: icnSprout
     resize: 30x30
+    type: BINARY
   - file: mdi:flower-tulip-outline
     id: icnFlower
     resize: 30x30
+    type: BINARY
 
 time:
   - platform: homeassistant
@@ -402,11 +430,12 @@ display:
   - platform: waveshare_epaper
     id: displayComponent
     # model: 7.50in-bV3
-    model: 7.50in-bv2
+    model: 7.50in-bV3-bwr
+    # model: 7.50in-bv2
     #pins
     busy_pin:
       number: GPIO25
-      inverted: false
+      inverted: true
     reset_pin: GPIO1
     cs_pin: GPIO23 # chip select (SS) # when to listen for data
     dc_pin: GPIO3 # ?
@@ -423,6 +452,8 @@ display:
       int w = it.get_width() - sX;
       int h = it.get_height() - 25 - sY;
       int divMargin = 25;
+      const auto RED = Color(255, 0,   0,   0);
+
 
       // it.print(100, 100, id(robotoFontMed), "Hello World");
 
@@ -456,9 +487,9 @@ display:
       int q1Y = qY;       // grid row 1 start y 
       int q2Y = qY + qH / 2;   // grid row 2 start y 
       // horizontal
-      it.line(q1X + 10, q2Y, sX + w - 10, q2Y);
+      it.line(q1X + 10, q2Y, sX + w - 10, q2Y, RED);
       // vertical
-      it.line(q2X, q1Y + 5, q2X, q1Y + qH - 5);
+      it.line(q2X, q1Y + 5, q2X, q1Y + qH - 5, RED);
 
       // temps rooms
       roomInfo(q1X + 10, q1Y, "Wohnzimmer", 
