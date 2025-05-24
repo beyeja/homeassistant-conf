@@ -58,7 +58,7 @@ void forecast(int x, int y, esphome::image::Image *icnFc,
               display::Display &it, esphome::font::Font *font,
               esphome::homeassistant::HomeassistantSensor *currentTemp) {
   // weather condition
-  it.image(x, y, icnFc);
+  it.image(x, y, icnFc, Color(255, 0,   0,   0));
 
   int fontHeight = font->get_height();
   int lineHeight = fontHeight;
@@ -87,7 +87,7 @@ void plant(int x, int y, float val, esphome::image::Image *icn,
   int progressW = 25;
   int margin = 5;
 
-  it.image(x + progressW / 2, y, icn, ImageAlign::TOP_CENTER);
+  it.image(x + progressW / 2, y, icn, ImageAlign::TOP_CENTER, Color(255, 0,   0,   0));
 
   // progress bar x, y, w, h
   int barX = x;

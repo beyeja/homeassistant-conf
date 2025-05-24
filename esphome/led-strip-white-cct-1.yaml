@@ -13,11 +13,6 @@ logger:
 # WLED Config:
 # WS2811 colorOrder:BRG numLED: 19 GPIO: 1 maxAmp: 2000mA perLEDAmp: 50mA 
 
-# external_components:
-#   - source: github://pr#4257
-#     components: [fastled]
-#     refresh: always
-
 light:
   - platform: neopixelbus
     type: "BRG"
@@ -59,9 +54,6 @@ api:
 ota:
   platform: esphome
   password: !secret ota_password
-
-web_server:
-  port: 80 # Or your preferred port
   
 wifi:
   ssid: !secret wifi_ssid
