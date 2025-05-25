@@ -15,7 +15,7 @@ esp32:
 
 # Enable logging
 logger:
-  level: VERBOSE
+  # level: VERBOSE
 
 # Enable Home Assistant API
 api:
@@ -29,7 +29,7 @@ ota:
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
-  # fast_connect: true # test this to save some power
+  fast_connect: true # test this to save some power
 
   # Enable fallback hotspot (captive portal) in case wifi connection fails
   ap:
@@ -60,7 +60,7 @@ output:
 deep_sleep:
   id: deepSleepComponent
   run_duration: 120s # this is the max awake time, proper sleep is inplemented in actions
-  sleep_duration: 60min
+  sleep_duration: 30min
 
 script:
   - id: scriptConsiderSleep
@@ -73,7 +73,20 @@ script:
             - logger.log: 'Consider Going to sleep: avoided by "prevent_deep_sleep"'
           else:
             - logger.log: "Consider Going to sleep, ...sleeping in a second"
-            - delay: 1s
+            # set dynamic sleep duration
+            - lambda: |-
+                auto time = id(esptime).now();
+                int hour = time.hour;
+                if ((hour >= 23) || (hour < 7)) {
+                  // Night time: sleep 60 minutes
+                  ESP_LOGD("sleep", "Nighttime detected (%02d:%02d) -> sleeping 60 minutes", hour, time.minute);
+                  id(deepSleepComponent).set_sleep_duration(60 * 60 * 1000);
+                } else {
+                  // Day time: sleep 30 minutes
+                  ESP_LOGD("sleep", "Daytime detected (%02d:%02d) -> sleeping 30 minutes", hour, time.minute);
+                  id(deepSleepComponent).set_sleep_duration(30 * 60 * 1000);
+                }
+            - delay: 5s
             - deep_sleep.enter: deepSleepComponent
 
 i2c:
@@ -235,7 +248,7 @@ sensor:
   - platform: bme280_i2c
     i2c_id: bus_a
     address: 0x76
-    update_interval: 1s
+    update_interval: 2s
     temperature:
       name: "Temperature"
       id: internalTemp
@@ -299,68 +312,101 @@ font:
     glyphs: '>›!"%()+=,-_.:°/?0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz'
 
 image:
+  # colored multicolor image
+  # - file: "images/cherry-blossom.png"
+  #   id: imgDecoration
+  #   resize: 240x240
+  #   type: RGB565
+  #   dither: FLOYDSTEINBERG
+  - file: "images/cherry-blossom-red.png"
+    id: imgDecorationRedMask
+    type: BINARY
+    transparency: chroma_key
+    resize: 300x300
+  - file: "images/cherry-blossom-black.png"
+    id: imgDecorationBlackMask
+    type: BINARY
+    transparency: chroma_key
+    resize: 300x300
+
+  # icons for values
   - file: mdi:solar-panel-large
     id: icnSolarPanelXL
     resize: 30x30
     type: BINARY
+    transparency: chroma_key
   - file: mdi:water-thermometer-outline
     id: icnThermostatXL
     resize: 30x30
     type: BINARY
+    transparency: chroma_key
   - file: mdi:weather-sunset-down
     id: icnSunSet
     resize: 25x25
     type: BINARY
+    transparency: chroma_key
   - file: mdi:weather-sunset-up
     id: icnSunRise
     resize: 25x25
     type: BINARY
+    transparency: chroma_key
   - file: mdi:weather-pouring
     id: icnRainProbability
     resize: 30x30
     type: BINARY
+    transparency: chroma_key
   - file: mdi:water-percent
     id: icnHumidity
     resize: 30x30
     type: BINARY
+    transparency: chroma_key
 
   # forecast images large
   - file: mdi:weather-sunny
     id: icnSunnyXL
     resize: 200x200
     type: BINARY
+    transparency: chroma_key
   - file: mdi:weather-night
     id: icnClearNightXL
     resize: 200x200
     type: BINARY
+    transparency: chroma_key
   - file: mdi:weather-cloudy
     id: icnCloudyXL
     resize: 200x200
     type: BINARY
+    transparency: chroma_key
   - file: mdi:weather-rainy
     id: icnRainyXL
     resize: 200x200
     type: BINARY
+    transparency: chroma_key
   - file: mdi:weather-snowy-rainy
     id: icnSleetXL
     resize: 200x200
     type: BINARY
+    transparency: chroma_key
   - file: mdi:weather-snowy
     id: icnSnowXL
     resize: 200x200
     type: BINARY
+    transparency: chroma_key
   - file: mdi:weather-windy
     id: icnWindXL
     resize: 200x200
     type: BINARY
+    transparency: chroma_key
   - file: mdi:weather-fog
     id: icnFogXL
     resize: 200x200
     type: BINARY
+    transparency: chroma_key
   - file: mdi:weather-partly-cloudy
     id: icnPartlyCloudyXL
     resize: 200x200
     type: BINARY
+    transparency: chroma_key
 
   # forecast images small
   - file: mdi:weather-sunny
@@ -454,7 +500,6 @@ display:
       int divMargin = 25;
       const auto RED = Color(255, 0,   0,   0);
 
-
       // it.print(100, 100, id(robotoFontMed), "Hello World");
 
       // for layout debugging
@@ -465,6 +510,12 @@ display:
       it.printf(sX + 130, sY + 742, id(microSix), "%.2f V", id(batteryVoltageSensor).state);
       // it.printf(sX + 0, sY + 742 - 9, id(microSix), "%.0f iaq", id(internalAirQuality).state);
       // it.printf(sX + 50, sY + 742 - 9, id(microSix), "%s", id(internalIAQAccuracy).state.c_str());
+
+      // decoration image
+      int imgX = 0;
+      int imgY = it.get_height();
+      it.image(imgX, imgY, imgDecorationRedMask, ImageAlign::BOTTOM_LEFT, Color(255, 0,   0,   0));
+      it.image(imgX, imgY, imgDecorationBlackMask, ImageAlign::BOTTOM_LEFT);
 
       // weather forecast today
       forecast(sX + 35, sY, forecastIcon(id(weatherCondition).state, true), 
@@ -483,7 +534,7 @@ display:
 
       int qH = 225, qY = sY + 330;   // height of whole grid, startY of grid
       int q1X = sX;             // grid col 1 start x 
-      int q2X = (q2X + w) / 2;  // grid col 2 start x 
+      int q2X = (q1X + w) / 2;  // grid col 2 start x 
       int q1Y = qY;       // grid row 1 start y 
       int q2Y = qY + qH / 2;   // grid row 2 start y 
       // horizontal
