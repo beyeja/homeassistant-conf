@@ -1,0 +1,126 @@
+esphome:
+  name: water-level-sensor-1
+  friendly_name: Water Level Sensor 1
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+number:
+  - platform: template
+    name: "Sensor Offset"
+    id: sensorOffset
+    optimistic: true
+    unit_of_measurement: m
+    initial_value: 0.00
+    min_value: -1.0
+    max_value: 1.0
+    step: 0.01
+    restore_value: true
+    mode: BOX
+
+  - platform: template
+    name: "Barrel Height"
+    id: barrelHeight
+    optimistic: true
+    unit_of_measurement: m
+    initial_value: 0.00
+    min_value: 0.3 # minimum distance is 25cm
+    max_value: 6.0
+    step: 0.01
+    restore_value: true
+    mode: BOX
+
+uart:
+  tx_pin: GPIO14
+  rx_pin: GPIO12
+  baud_rate: 9600
+
+switch:
+  - platform: restart
+    name: "Restart Node"
+
+sensor:
+  - platform: "jsn_sr04t"
+    name: "Distance Real"
+    id: sensorDistanceRaw
+    device_class: distance
+    update_interval: 500ms
+    filters:
+      - sliding_window_moving_average:
+          window_size: 7
+          send_every: 3 # TODO slow down to 10sec?
+          send_first_at: 3
+
+  - platform: template
+    name: "Distance"
+    id: sensorDistance
+    update_interval: 500ms
+    unit_of_measurement: m
+    device_class: distance
+    lambda: |-
+      return id(sensorDistanceRaw).state - id(sensorOffset).state;
+
+  - platform: template
+    name: "Fill Level"
+    id: fillLevel
+    device_class: water
+    update_interval: 500ms
+    unit_of_measurement: "%"
+    lambda: |-
+      float height = id(barrelHeight).state;
+      float offset = id(sensorOffset).state;
+      float distance = id(sensorDistanceRaw).state - offset;
+
+      // Prevent division by zero
+      if (height <= 0.0) {
+        return 0.0;
+      }
+
+      // Calculate water depth
+      float water_depth = height - distance;
+
+      // Clamp value between 0 and height
+      if (water_depth < 0.0) {
+        water_depth = 0.0;
+      } else if (water_depth > height) {
+        water_depth = height;
+      }
+
+      return (water_depth / height) * 100.0;
+
+  - platform: wifi_signal
+    name: "WiFi Signal"
+    update_interval: 60s
+    icon: mdi:wifi
+
+  - platform: uptime
+    name: "Uptime"
+    update_interval: 1s
+    icon: mdi:clock-outline
+    filters:
+      - heartbeat: 2s
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "a2ilQ08WJhyunSdrUePVpnLXKQs6EnBOiKV0r3rbQsc="
+
+ota:
+  - platform: esphome
+    password: "321b7b0a8e3202d66fca91e0b0865472"
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Water-Level-Sensor-1"
+    password: !secret wifi_ap_password
+
+captive_portal:
