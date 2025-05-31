@@ -314,161 +314,109 @@ font:
     glyphs: '>›!"%()+=,-_.:°/?0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz'
 
 image:
-  # colored multicolor image
-  # - file: "images/cherry-blossom.png"
-  #   id: imgDecoration
-  #   resize: 240x240
-  #   type: RGB565
-  #   dither: FLOYDSTEINBERG
-  - file: "images/cherry-blossom-red.png"
-    id: imgDecorationRedMask
-    type: BINARY
-    transparency: chroma_key
-    resize: 300x300
-  - file: "images/cherry-blossom-black.png"
-    id: imgDecorationBlackMask
-    type: BINARY
-    transparency: chroma_key
-    resize: 300x300
+  binary:
+    chroma_key:
+      - file: "images/cherry-blossom-red.png"
+        id: imgDecorationRedMask
+        resize: 480x800
+      - file: "images/cherry-blossom-black.png"
+        id: imgDecorationBlackMask
+        resize: 480x800
 
-  # icons for values
-  - file: mdi:solar-panel-large
-    id: icnSolarPanelXL
-    resize: 30x30
-    type: BINARY
-    transparency: chroma_key
-  - file: mdi:water-thermometer-outline
-    id: icnThermostatXL
-    resize: 30x30
-    type: BINARY
-    transparency: chroma_key
-  - file: mdi:weather-sunset-down
-    id: icnSunSet
-    resize: 25x25
-    type: BINARY
-    transparency: chroma_key
-  - file: mdi:weather-sunset-up
-    id: icnSunRise
-    resize: 25x25
-    type: BINARY
-    transparency: chroma_key
-  - file: mdi:weather-pouring
-    id: icnRainProbability
-    resize: 30x30
-    type: BINARY
-    transparency: chroma_key
-  - file: mdi:water-percent
-    id: icnHumidity
-    resize: 30x30
-    type: BINARY
-    transparency: chroma_key
+      # icons for values
+      - file: mdi:solar-panel-large
+        id: icnSolarPanelXL
+        resize: 30x30
+      - file: mdi:water-thermometer-outline
+        id: icnThermostatXL
+        resize: 30x30
+      - file: mdi:weather-sunset-down
+        id: icnSunSet
+        resize: 25x25
+      - file: mdi:weather-sunset-up
+        id: icnSunRise
+        resize: 25x25
+      - file: mdi:weather-pouring
+        id: icnRainProbability
+        resize: 30x30
+      - file: mdi:water-percent
+        id: icnHumidity
+        resize: 30x30
 
-  # forecast images large
-  - file: mdi:weather-sunny
-    id: icnSunnyXL
-    resize: 200x200
-    type: BINARY
-    transparency: chroma_key
-  - file: mdi:weather-night
-    id: icnClearNightXL
-    resize: 200x200
-    type: BINARY
-    transparency: chroma_key
-  - file: mdi:weather-cloudy
-    id: icnCloudyXL
-    resize: 200x200
-    type: BINARY
-    transparency: chroma_key
-  - file: mdi:weather-rainy
-    id: icnRainyXL
-    resize: 200x200
-    type: BINARY
-    transparency: chroma_key
-  - file: mdi:weather-snowy-rainy
-    id: icnSleetXL
-    resize: 200x200
-    type: BINARY
-    transparency: chroma_key
-  - file: mdi:weather-snowy
-    id: icnSnowXL
-    resize: 200x200
-    type: BINARY
-    transparency: chroma_key
-  - file: mdi:weather-windy
-    id: icnWindXL
-    resize: 200x200
-    type: BINARY
-    transparency: chroma_key
-  - file: mdi:weather-fog
-    id: icnFogXL
-    resize: 200x200
-    type: BINARY
-    transparency: chroma_key
-  - file: mdi:weather-partly-cloudy
-    id: icnPartlyCloudyXL
-    resize: 200x200
-    type: BINARY
-    transparency: chroma_key
+      # forecast images large
+      - file: mdi:weather-sunny
+        id: icnSunnyXL
+        resize: 200x200
+      - file: mdi:weather-night
+        id: icnClearNightXL
+        resize: 200x200
+      - file: mdi:weather-cloudy
+        id: icnCloudyXL
+        resize: 200x200
+      - file: mdi:weather-rainy
+        id: icnRainyXL
+        resize: 200x200
+      - file: mdi:weather-snowy-rainy
+        id: icnSleetXL
+        resize: 200x200
+      - file: mdi:weather-snowy
+        id: icnSnowXL
+        resize: 200x200
+      - file: mdi:weather-windy
+        id: icnWindXL
+        resize: 200x200
+      - file: mdi:weather-fog
+        id: icnFogXL
+        resize: 200x200
+      - file: mdi:weather-partly-cloudy
+        id: icnPartlyCloudyXL
+        resize: 200x200
 
-  # forecast images small
-  - file: mdi:weather-sunny
-    id: icnSunnyMD
-    resize: 80x80
-    type: BINARY
-  - file: mdi:weather-night
-    id: icnClearNightMD
-    resize: 80x80
-    type: BINARY
-  - file: mdi:weather-cloudy
-    id: icnCloudyMD
-    resize: 80x80
-    type: BINARY
-  - file: mdi:weather-rainy
-    id: icnRainyMD
-    resize: 80x80
-    type: BINARY
-  - file: mdi:weather-snowy-rainy
-    id: icnSleetMD
-    resize: 80x80
-    type: BINARY
-  - file: mdi:weather-snowy
-    id: icnSnowMD
-    resize: 80x80
-    type: BINARY
-  - file: mdi:weather-windy
-    id: icnWindMD
-    resize: 80x80
-    type: BINARY
-  - file: mdi:weather-fog
-    id: icnFogMD
-    resize: 80x80
-    type: BINARY
-  - file: mdi:weather-partly-cloudy
-    id: icnPartlyCloudyMD
-    resize: 80x80
-    type: BINARY
+      # forecast images small
+      - file: mdi:weather-sunny
+        id: icnSunnyMD
+        resize: 80x80
+      - file: mdi:weather-night
+        id: icnClearNightMD
+        resize: 80x80
+      - file: mdi:weather-cloudy
+        id: icnCloudyMD
+        resize: 80x80
+      - file: mdi:weather-rainy
+        id: icnRainyMD
+        resize: 80x80
+      - file: mdi:weather-snowy-rainy
+        id: icnSleetMD
+        resize: 80x80
+      - file: mdi:weather-snowy
+        id: icnSnowMD
+        resize: 80x80
+      - file: mdi:weather-windy
+        id: icnWindMD
+        resize: 80x80
+      - file: mdi:weather-fog
+        id: icnFogMD
+        resize: 80x80
+      - file: mdi:weather-partly-cloudy
+        id: icnPartlyCloudyMD
+        resize: 80x80
 
-    # plants
-  - file: mdi:cactus
-    id: icnCactus
-    resize: 30x30
-    type: BINARY
-  - file: mdi:fruit-pineapple
-    id: icnPineapple
-    resize: 30x30
-    type: BINARY
-  - file: mdi:tree-outline
-    id: icnTree
-    resize: 30x30
-    type: BINARY
-  - file: mdi:sprout-outline
-    id: icnSprout
-    resize: 30x30
-    type: BINARY
-  - file: mdi:flower-tulip-outline
-    id: icnFlower
-    resize: 30x30
-    type: BINARY
+        # plants
+      - file: mdi:cactus
+        id: icnCactus
+        resize: 30x30
+      - file: mdi:fruit-pineapple
+        id: icnPineapple
+        resize: 30x30
+      - file: mdi:tree-outline
+        id: icnTree
+        resize: 30x30
+      - file: mdi:sprout-outline
+        id: icnSprout
+        resize: 30x30
+      - file: mdi:flower-tulip-outline
+        id: icnFlower
+        resize: 30x30
 
 time:
   - platform: homeassistant
@@ -502,6 +450,12 @@ display:
       int divMargin = 25;
       const auto RED = Color(255, 0,   0,   0);
 
+      // background decoration image
+      int imgX = 0;
+      int imgY = it.get_height();
+      it.image(imgX, imgY, imgDecorationRedMask, ImageAlign::BOTTOM_LEFT, Color(255, 0,   0,   0));
+      it.image(imgX, imgY, imgDecorationBlackMask, ImageAlign::BOTTOM_LEFT);
+
       // it.print(100, 100, id(robotoFontMed), "Hello World");
 
       // for layout debugging
@@ -512,12 +466,6 @@ display:
       it.printf(sX + 130, sY + 742, id(microSix), "%.2f V", id(batteryVoltageSensor).state);
       // it.printf(sX + 0, sY + 742 - 9, id(microSix), "%.0f iaq", id(internalAirQuality).state);
       // it.printf(sX + 50, sY + 742 - 9, id(microSix), "%s", id(internalIAQAccuracy).state.c_str());
-
-      // decoration image
-      int imgX = 0;
-      int imgY = it.get_height();
-      it.image(imgX, imgY, imgDecorationRedMask, ImageAlign::BOTTOM_LEFT, Color(255, 0,   0,   0));
-      it.image(imgX, imgY, imgDecorationBlackMask, ImageAlign::BOTTOM_LEFT);
 
       // weather forecast today
       forecast(sX + 35, sY, forecastIcon(id(weatherCondition).state, true), 
