@@ -131,12 +131,13 @@ sensor:
     attenuation: 12db
     name: "Battery Voltage"
     device_class: voltage
-    update_interval: 500ms
+    update_interval: 100ms
     filters:
       - multiply: 2
       - median:
           window_size: 5
-          send_first_at: 2
+          send_every: 25
+          send_first_at: 10
 
   - platform: template
     name: "Battery Level"
@@ -194,6 +195,7 @@ sensor:
     entity_id: sensor.esphome_forecast_weather
     attribute: temperature
     internal: true
+    force_update: True
     filters:
       - lambda: return round(x);
     # main temp sensor used for screen and sleep update event
